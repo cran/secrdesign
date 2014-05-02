@@ -1,0 +1,19 @@
+citHeader("To cite package 'secrdesign' in publications use:")
+
+desc <- packageDescription("secrdesign")
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", desc$Date)
+vers <- paste("R package version", desc$Version)
+url <- "http://CRAN.R-project.org/package=secrdesign"
+
+citEntry(entry="Manual",
+    title = "secrdesign: sampling design for spatially explicit capture-recapture",
+    author = personList(as.person("Murray Efford")),
+    year = year,
+    note = vers,
+    url = url,
+    textVersion =
+        paste("Efford, M. G. (", year,
+        "). secrdesign: sampling design for spatially explicit capture-recapture. ",
+        vers, ". ", url, 
+        sep = "")
+)

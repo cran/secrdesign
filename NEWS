@@ -1,0 +1,14 @@
+Changes in version 2.1.2 (2014-04-29)
+
+New features or changed behaviour of old functions
+
+    o   validate() function to set out-of-range values to NA
+    o   min, max as fields in summary.selectedstatistics
+    o   secrdesign.pdf vignette
+    o   header in summary output now includes pop.args
+    o   run.scenarios() allows IHP population simulation as 
+        alternative to specifying uniform density
+
+Bugs fixed
+
+    o   maskset was not saved when specified in run.scenarios()
