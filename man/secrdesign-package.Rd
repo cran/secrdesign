@@ -14,8 +14,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.1.2\cr
-Date: \tab 2014-05-02\cr
+Version: \tab 2.1.3\cr
+Date: \tab 2014-06-04\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -38,9 +38,12 @@ The important functions in \pkg{secrdesign} are:
   each scenario \cr 
 }
 
-Documentation is provided in a vignette \url{../doc/secrdesign.pdf}; an
-Appendix has code for various examples that should help get you started.
-% \figure{workflow2.png}{workflow}
+Documentation is provided in a vignette
+\url{../doc/secrdesign-vignette.pdf}; an Appendix has code for various
+examples that should help get you started. The help pages are also
+available as \url{../doc/secrdesign-manual.pdf}. The solid blue line in
+the following figure shows the usual pattern of use.
+
 \if{html}{\figure{workflow2.png}{secrdesign workflow}}
 \if{latex}{\figure{workflow2.png}{options: width=5.5in, height=3.5in}}
 
@@ -62,8 +65,6 @@ processing with \code{\link{predict.fittedmodels}} or related functions
 needed before summarization. The default (when \code{fit = TRUE}) is to
 bypass this step by saving output from \code{run.scenarios} in
 `estimatetables' form.
-
-The help pages are also available as \url{../doc/secrdesign-manual.pdf}.
 
 }
 
