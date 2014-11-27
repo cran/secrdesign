@@ -13,7 +13,7 @@
 \usage{
 
 make.scenarios(trapsindex = 1, noccasions = 3,  nrepeats = 1, D, g0, sigma, lambda0,
-detectfn = 0, recapfactor = 1, popindex = 1, detindex = 1, fitindex = 1,
+detectfn = 0, recapfactor = 1, popindex = 1, detindex = 1, fitindex = 1, groups,
 crosstraps = TRUE)
 
 }
@@ -46,6 +46,8 @@ crosstraps = TRUE)
   
   \item{fitindex}{integer vector determining which model is fitted}
   
+  \item{groups}{character vector of group labels (optional)}
+  
   \item{crosstraps}{logical; if TRUE the output includes all
     combinations of   
   \code{trapsindex}, \code{noccasions} and \code{nrepeats}}
@@ -62,7 +64,7 @@ crosstraps = TRUE)
   all combinations of the parameters with \code{trapsindex} and the
   number of sampling occasions. If \code{crosstraps} is FALSE then
   \code{trapsindex}, \code{noccasions}, and \code{nrepeats} are merely
-  used to fillin these columns in the output dataframe.
+  used to fill in these columns in the output dataframe.
 
   The argument \code{lambda0} replaces \code{g0} for the hazard detection
   functions 14--18 (\code{\link[secr]{detectfn}}). 
@@ -78,12 +80,15 @@ crosstraps = TRUE)
   \code{fitindex} allows a choice of different models when the argument
   \code{fit.args} of \code{\link{run.scenarios}} is a compound list.
   
+  If \code{groups} is provided each scenario is replicated to the length of \code{groups} and a column `group' is added.
+  
 }
 
 \value{
 
-  Dataframe with one row per scenario and the columns
+  Dataframe with one row per scenario (or sub-scenario) and the columns
   \item{scenario}{a number identifying the scenario}
+  \item{group}{(optional)}
   \item{trapsindex}{}
   \item{noccasions}{}
   \item{nrepeats}{}
@@ -95,6 +100,8 @@ crosstraps = TRUE)
   \item{popindex}{}
   \item{detindex}{}
   \item{fitindex}{}
+  
+  An attribute `inputs' is saved for possible use in \code{\link{make.array}}.
   
 }
 

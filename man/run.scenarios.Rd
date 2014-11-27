@@ -39,8 +39,8 @@ shortcut.
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL, ncores = 1,
-    seed = 123, ...)
+    pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL, 
+    multisession = FALSE, ncores = 1, seed = 123, ...)
 
 fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
     ncores = 1, ...)
@@ -64,6 +64,7 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   \item{fit.args}{list of named arguments to
   \code{\link[secr]{secr.fit}} (optional)}
   \item{extractfn}{function to extract a vector of statistics from secr model}
+  \item{multisession}{logical; if TRUE groups are treated as additional sessions}
   \item{ncores}{integer number of cores for parallel processing}
   \item{seed}{integer pseudorandom number seed}
   \item{\dots}{other arguments passed to extractfn}
@@ -100,9 +101,10 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   for whether the single argument is an secr object, and if not supply a
   named vector of NA values of the correct length.
 
+  From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
+
   The L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link[parallel]{clusterSetRNGStream}}).
-
   
   A summary method is provided (see
   \code{\link{summary.secrdesign}}). It is usually necessary to process
@@ -145,6 +147,8 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   \code{fit.args} as a new `sub-scenario' of each input scenario
   (i.e. all models are fitted to every dataset). The output
   possibilities are the same as for \code{run.scenarios}.
+  
+ If subclasses have been defined (i.e. scenarios has multiple rows with the same scenario ID), each simulated capthist object has covariates with a character-valued column named "group" ("1", "2" etc.) (there is also a column "sex" generated automatically by \code{sim.popn}).
   
 }
 

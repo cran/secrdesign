@@ -5,12 +5,13 @@
 
 ## 2014-02-19 popindex and popargs replace Ndist; FIXED 'CROSSING'
 ## 2014-04-27 detindex
+## 2014-11-25 groups
 ###############################################################################
 
 ## construct a dataframe in which each row represents a scenario
 make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
                             D, g0, sigma, lambda0, detectfn = 0, recapfactor = 1,
-                            popindex = 1, detindex = 1, fitindex = 1,
+                            popindex = 1, detindex = 1, fitindex = 1, groups,
                             crosstraps = TRUE) {
     inputs <-  as.list (environment())
     inputs$crosstraps <- NULL
@@ -49,9 +50,21 @@ make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
         ## assume trapping index in col 1
         value <- cbind(trapdf[value[,1],], value[,-1])
     }
-    value <- cbind (scenario = 1:nrow(value), value)
-    rownames(value) <- value$scenario
-    attr(value, 'inputs') <- inputs
+#     value <- cbind (scenario = 1:nrow(value), value)
+#     rownames(value) <- value$scenario
+    nr <- nrow(value)
+    value <- cbind (scenario = 1:nr, value)
+    if (!missing(groups)) {
+        groups <- factor(groups)
+        ng <- length(groups)
+        if (ng < 2) 
+            warning("fewer than 2 groups - groups ignored")
+        else {
+            value <- cbind(value[rep(1:nr, each = ng),], group = rep(groups, nr))[,c(1,13,2:12)]
+        }
+    }
+    rownames(value) <- 1:nrow(value)
+    attr(value, 'inputs') <- inputs    ## used in make.array()
     value
 }
 

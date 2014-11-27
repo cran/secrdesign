@@ -1,6 +1,24 @@
+Changes in version 2.2.1 (2014-11-27)
+
+New features or changed behaviour of old functions
+
+    o   run.scenarios() allows value "linear" for model2D argument of sim.popn 
+    o   details 'userdist' argument suppressed when printing summaries
+    o   make.scenarios() optionally generates scenarios with group structure (e.g. males and females)
+    o   run.scenarios() simulates composite (grouped) populations
+
+Bugs fixed
+    o   validate() did not catch NaN values
+
+Other
+    o   attribute 'regionarea' renamed 'regionsize' to cover linear case
+    o   workflow figure dropped from secrdesign-package.Rd (see vignette)
+    o   argument order changed in summary.selectedstatistics
+    o   default extractfn checks for non-null 'fit' of returned secr object
+
 Changes in version 2.1.3 (2014-06-04)
 
-    o   vignette renamed and editted
+    o   vignette renamed and edited
     o   vignette source code included
 
 Changes in version 2.1.2 (2014-04-29)

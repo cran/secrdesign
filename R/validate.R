@@ -1,7 +1,8 @@
-## 2014-04-17, 27
+## 2014-04-17, 27, 2014-10-30
 validate <- function (x, test, validrange = c(0, Inf), targets = test) {
     onescenario <- function (scen, minx, maxx) {
         criterion <- (scen[,test] < minx) | (scen[,test] > maxx)
+        criterion[is.na(criterion)] <- TRUE     ## 2014-10-30
         scen[criterion,targets] <- NA
         scen[is.na(scen[,test]),targets] <- NA
         scen

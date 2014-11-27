@@ -22,8 +22,8 @@
 
 \method{summary}{estimatetables}(object, ...)
 
-\method{summary}{selectedstatistics}(object, dec = 5, fields = c('n', 'mean',
-'se'), alpha = 0.05, type = c('list','dataframe','array'), ...)
+\method{summary}{selectedstatistics}(object, fields = c('n', 'mean',
+'se'), dec = 5, alpha = 0.05, type = c('list','dataframe','array'), ...)
 
 \method{plot}{selectedstatistics}(x, scenarios, statistic, type =
 c('hist', 'CI'), refline, xlab = NULL, ...)

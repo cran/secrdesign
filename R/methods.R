@@ -3,127 +3,8 @@
 ## methods.R
 ## 2014-02-07,08
 ## 2014-04-09, 2014--04-11, 2014-04-29
+## 2014-11-25 select.stats moved to own file
 ###############################################################################
-
-select.stats <- function (object, parameter = 'D', statistics) {
-    if (!inherits(object, 'estimatetables'))
-        stop ("select.stats requires input of class estimatetables")
-    if (is.na(object$outputtype))
-        stop ("cannot select.stats output of unknown type")
-    if (object$outputtype == 'secrfit')
-        stop ("cannot select.stats secr fit - use predict() first")
-
-    estname <- ""
-    SEname <- ""
-    if (object$outputtype %in% c('predicted', 'derived', 'regionN')) {
-        estname <- 'estimate'
-        SEname = 'SE.estimate'
-    }
-    else if (object$outputtype == 'coef') {
-        estname <- 'beta'
-        SEname <- 'SE.beta'
-    }
-
-    typical <- object$output[[1]][[1]]  ## first scenario, first replicate
-    stat0 <- names(typical)[sapply(typical, is.numeric)]
-    if (missing(statistics)) {
-        typical <- object$output[[1]][[1]]  ## first scenario, first replicate
-        stat1 <- stat0
-        stat2 <- c('RB','RSE','COV')
-    }
-    else {
-        stat1 <- statistics[statistics %in% stat0]
-        stat2 <- statistics[statistics %in% c('true','RB','RSE','COV','ERR')]
-    }
-    if (any(stat2 %in% c('true','RB','RSE','COV','ERR')) & (estname == '')) {
-        stat2 <- character(0)
-        warning ("cannot compute requested statistics with your data")
-    }
-
-    extractfn <- function (out, true, estimated) {
-        getij <- function(df, i, j) {
-            if (nrow(df) == 0)
-                rep(NA, length(j))
-            else
-                df[i,j]
-        }
-        if (length(stat1)>0) {
-            tmp <- lapply(out, getij, parameter, stat1)
-            tmp <- do.call (rbind, tmp)
-            rownames(tmp) <- 1:nrow(tmp)
-        }
-        else
-            tmp <- matrix(nrow = length(out), ncol = 0)
-
-        for (st in stat2) {
-            if (st == 'true') {
-                tmp <- cbind(tmp, rep(true, nrow(tmp)))
-            }
-            if (st == 'RB') {
-                if (estimated) {
-                    est <- sapply(out, getij, parameter, estname)
-                    tmp <- cbind(tmp, (est - true) / true)
-                }
-                else tmp <- cbind (tmp, rep(NA, nrow(tmp)))
-            }
-            if (st == 'RSE') {
-                est <- sapply(out, getij, parameter, estname)
-                SE.est <- sapply(out, getij, parameter, SEname)
-                tmp <- cbind(tmp, SE.est/est)
-            }
-            if (st == 'ERR') {
-                if (estimated) {
-                    est <- sapply(out, getij, parameter, estname)
-                    tmp <- cbind(tmp, abs(est-true))
-                }
-                else tmp <- cbind (tmp, rep(NA, nrow(tmp)))
-            }
-            if (st == 'COV') {
-                if (estimated) {
-                    est <- sapply(out, getij, parameter, estname)
-                    lcl <- sapply(out, getij, parameter, 'lcl')
-                    ucl <- sapply(out, getij, parameter, 'ucl')
-                    tmp <- cbind(tmp, as.numeric((true>lcl) & (true<ucl)))
-                }
-                else tmp <- cbind (tmp, rep(NA, nrow(tmp)))
-            }
-        }
-        colnames(tmp) <- c(stat1, stat2)
-        tmp
-    }
-    estimated <- sapply(object$scenarios$fitindex,
-                        function(x) {
-                            method <- if ('method' %in% names(object$fit.args))
-                                object$fit.args$method
-                            else
-                                object$fit.args[[x]]$method
-                            no <- object$fit & (method != 'none')
-                            ifelse(length(no) == 0, TRUE, no)
-                        }
-                        )
-    trueD <- object$scenarios[,'D']    ## vector length = number of scenarios
-
-    if (object$outputtype == 'regionN') {
-        true <- trueD   ## object$scenarios[,'D']
-        true <- true * attr(object, 'regionarea')  ## for each scenario
-    }
-    else if (object$outputtype %in% c('predicted','derived')){
-        if (parameter == 'D')
-            true <- trueD
-        else
-            true <- object$scenarios[,parameter]
-    }
-    else true <- NA
-    object$output <- mapply(extractfn,
-                            object$output,
-                            true,
-                            estimated,
-                            SIMPLIFY = FALSE)
-    object$outputtype <- 'numeric'
-    class(object) <- c('selectedstatistics', 'secrdesign', 'list')
-    attr(object, 'parameter') <- parameter
-    object
-}
 
 make.array <- function (object) {
     inputs <- attr(object$scenarios, 'inputs')
@@ -177,20 +58,49 @@ regionN.SL <- function (object, ...) {
     if (!inherits(object,'fittedmodels'))
         stop ("require fitted secr models")
     output <- lapply(object$output, lapply, region.N, ...)
-    ra <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
+    ra <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
     object$output <- output
     object$outputtype <- 'regionN'
-    attr(object, 'regionarea') <- ra ## one per scenario
+    attr(object, 'regionsize') <- ra    ## one per scenario
     class(object) <- c('estimatetables', 'secrdesign', 'list')
     object
 }
 
+## need to handle args that are function or large userdist matrix
+## 2014-11-12, 23
+
+dummyuserdist <- function (arg) {
+    if (is.list(arg)) {
+        if (!is.null(arg$details$userdist)) {
+            if (is.function(arg$details$userdist))
+                arg$details$userdist <- 'userdistfn'
+            else
+                arg$details$userdist <- 'userdistmatrix'
+        }
+        if (!is.null(arg$userdist)) {
+            if (is.function(arg$userdist))
+                arg$userdist <- 'userdistfn'
+            else
+                arg$userdist <- 'userdistmatrix'
+        }
+    }
+    arg
+}
+
+collapsemodel <- function (arg) {
+    if ('model' %in% names(arg)) {
+        arg[['model']] <-  secr:::model.string(arg[['model']], NULL)
+    }
+    arg
+}
 
 argdf <- function (args) {
     if (is.null(args))
         NULL
     else {
-        tmp <- lapply(args, function(x) sapply(x, format))
+        tmp <- lapply(args, dummyuserdist)
+        tmp <- lapply(tmp, collapsemodel)
+        tmp <- lapply(tmp, function(x) sapply(x, format))
         nm <- unique(unlist(lapply(tmp, names)))
         tmp0 <- matrix('', nrow = length(tmp), ncol = length(nm),
                        dimnames = list(NULL,  nm))
@@ -200,6 +110,7 @@ argdf <- function (args) {
 }
 
 header <- function (object) {
+
     values <- lapply(object$scenarios, unique)
     nvalues <- sapply(values, length)
     notID <- names(object$scenarios) != 'scenario'
@@ -223,6 +134,7 @@ header <- function (object) {
         detargs <- data.frame(detindex = di, detargs[di,,drop = FALSE])
 
     fi <- unique(object$scenarios$fitindex)
+
     fitargs <- argdf(object$fit.args)
     if (!is.null(fitargs))
         fitargs <- data.frame(fitindex = fi, fitargs[fi,,drop = FALSE])
@@ -249,8 +161,9 @@ summary.estimatetables <- function (object, ...) {
     summary(tmp, ...)
 }
 
-summary.selectedstatistics <- function (object, dec = 5,
+summary.selectedstatistics <- function (object,
                                 fields = c('n', 'mean', 'se'),
+                                dec = 5,
                                 alpha = 0.05, type = c('list','dataframe','array'),
                                 ...) {
     if (length(fields) == 1)
@@ -299,7 +212,7 @@ summary.selectedstatistics <- function (object, dec = 5,
                                 collapse='.')
             val
         }
-        scenariolabel <- function (scen) {
+        subscenariolabel <- function (scen) {
             sv <- scen[varying]
             sv <- sapply(sv, format)
             nv <- names(object$scenarios)[varying]
@@ -316,7 +229,9 @@ summary.selectedstatistics <- function (object, dec = 5,
         tmp <- lapply(tmp, tidy)
 
         if (type == 'list') {
-            names(tmp) <- apply(object$scenario,1,scenariolabel)
+            lab <- apply(object$scenario,1, subscenariolabel)
+            names(tmp) <- sapply(split(lab, object$scenarios$scenario), paste,
+                                 collapse = ' + ')
         }
         else {
             new <- do.call(rbind, lapply(tmp, valstring))
@@ -365,8 +280,20 @@ summary.selectedstatistics <- function (object, dec = 5,
         tmp    <- lapply(out, statlast)
         out <- list(header = header(object), OUTPUT = tmp)
     }
+    ## wrap at 'group'
+    names(out$OUTPUT) <- degroup(names(out$OUTPUT))
     class (out) <- c('summarysecrdesign', 'list')
     out
+}
+
+degroup <- function (x) {
+    if (grepl('group', x[[1]])) {
+        x <- strsplit(x, 'group')
+        x <- lapply(x, function(y) y[nchar(y)>1])
+        x <- lapply(x, function(y) paste('group', y, sep=''))
+        lapply(x, paste, collapse = '\n  ')
+    }
+    else x
 }
 
 print.summarysecrdesign <- function (x, ...) {
@@ -399,6 +326,7 @@ print.summarysecrdesign <- function (x, ...) {
         print (x$header[['fit.args']], row.names = FALSE)
         cat("\n")
     }
+
     if (!is.null(x$OUTPUT)) {
         cat('OUTPUT\n')
         print(x$OUTPUT)
@@ -428,7 +356,9 @@ plot.selectedstatistics <- function (x, scenarios, statistic, type = c('hist','C
         if (refline) {
             if (param %in% c('E.N','R.N')) {
                 true <- x$scenarios[scen, 'D']
-                true <- true * attr(x, 'regionarea')[scen]
+                ## true <- true * attr(x, 'regionarea')[scen]
+                ## 2014-11-12
+                true <- true * attr(x, 'regionsize')[scen]
             }
             else {
                 true <- x$scenarios[scen, param]
@@ -454,7 +384,9 @@ plot.selectedstatistics <- function (x, scenarios, statistic, type = c('hist','C
         if (refline) {
             if (param %in% c('E.N','R.N')) {
                 true <- x$scenarios[scen, 'D']
-                true <- true * attr(x, 'regionarea')[scen]
+                ## true <- true * attr(x, 'regionarea')[scen]
+                ## 2014-11-12
+                true <- true * attr(x, 'regionsize')[scen]
             }
             else {
                 true <- x$scenarios[scen, param]

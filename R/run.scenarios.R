@@ -8,8 +8,10 @@
 ## 2014-04-14 fit.models
 ## 2014-04-26 IHP
 ## 2014-04-27 automatically wrap mask, pop.args, det.args if not in list form
+## 2014-09-03 linear mask tweaks
+## 2014-11-23 groups
+## 2014-11-24 new functions makeCH and processCH used by onesim()
 ###############################################################################
-
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -32,6 +34,7 @@ fullargs <- function (args, default, index) {
         for (i in 1:nind) {
             if (is.character(args[[i]]))
                 args[[i]] <- match.arg(args[[i]], default[[i]])
+            ## naked fn gives trouble here... 2014-09-03
             tmpargs[[i]] <- replace (default, names(args[[i]]), args[[i]])
             if (is.character(tmpargs[[i]]))
                 tmpargs[[i]] <- tmpargs[[i]][1]
@@ -42,121 +45,189 @@ fullargs <- function (args, default, index) {
 }
 ###############################################################################
 
-defaultextractfn  <- function(x) {
+defaultextractfn <- function(x) {
     if (inherits(x, 'capthist')) {
-        ## assume single-session CH
-        nmoves <- sum(unlist(sapply(moves(x), function(y) y>0)))
-        ## detectors per animal
-        dpa <- if (length(dim(x)) == 2)
-            mean(apply(abs(x), 1, function(y) length(unique(y[y>0]))))
-        else
-            mean(apply(apply(abs(x), c(1,3), sum)>0, 1, sum))
-        c(n=nrow(x), ndet=sum(abs(x)>0), nmov=nmoves, dpa = dpa)
+        ## summarised raw data
+        counts <- function(CH) {
+            ## for single-session CH
+            nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+            ## detectors per animal
+            dpa <- if (length(dim(CH)) == 2)
+                mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+            else
+                mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+            c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+        }
+        if (ms(x)) 
+            unlist(lapply(x, counts))
+        else {
+            gp <- covariates(x)$group
+            if (is.null(gp)) 
+                counts(x)
+            else 
+                unlist(lapply(split(x,gp,dropnullocc=TRUE), counts))
+        }            
     }
-    else if (inherits(x,'secr'))
+    else if (inherits(x,'secr') & (!is.null(x$fit)))
+        ## fitted model:
+        ## default predictions of 'real' parameters
         predict(x)
     else
-        data.frame()   ## 0 rows, 0 columns
+        ## null output: dataframe of 0 rows and 0 columns
+        data.frame()   
 }
 
-###############################################################################
-run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
-    nx = 32, pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL,
-    ncores = 1, seed = 123, ...) {
-
-    #--------------------------------------------------------------------------
-    onesim <- function (scenario) {
-        ## may later allow multi-line scenarios
-        if (nrow(scenario) != 1) stop()
-        with( scenario, {
-
+#####################
+makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multisession) {
+    ns <- nrow(scenario)    
+    with( scenario, {
+        CH <- vector(mode = 'list', ns)
+        for (i in 1:ns) {
             #####################
             ## retrieve data
-            grid <- trapset[[trapsindex]]
-            mask <- maskset[[maskindex]]
-            poparg <- full.pop.args[[popindex]]  ## 2014-04-06
-            detarg <- full.det.args[[detindex]]  ## 2014-04-06
-            fitarg <- full.fit.args[[fitindex]]
-
+            grid <- trapset[[trapsindex[i]]]
+            poparg <- full.pop.args[[popindex[i]]]  
+            detarg <- full.det.args[[detindex[i]]]  
+         
             #####################
             ## override D, core, buffer
-            if (poparg$model2D == 'IHP')
-                poparg$core <- mask
-            else
-                poparg$core <- attr(mask, "boundingbox")
-            poparg$D <- D*nrepeats
+            if (inherits(mask, 'linearmask'))               ## force to linear...
+                poparg$model2D <- 'linear'
+            if (poparg$model2D %in% c('IHP', 'linear')) {   ## linear        
+                poparg$core <- mask  
+                ## for 'linear' case we may want a constant numeric value
+                if (!is.character(poparg$D) & (length(poparg$D)<nrow(mask)))
+                    poparg$D <- D[i]     
+                if (nrepeats[i]!=1)
+                    stop("nrepeats > 1 not allowed for IHP, linear")
+            }            
+            else {
+                poparg$core <- attr(mask, "boundingbox")  
+                poparg$D <- D[i]*nrepeats[i]
+            }
             poparg$buffer <- 0
-
+        
             #####################
             ## generate population
             pop <- do.call(sim.popn, poparg)
-
+                         
             #####################
             ## form dp for sim.capthist
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
-            if (detectfn %in% 14:18) {
-                dp <- list(lambda0 = lambda0, sigma = sigma, recapfactor = recapfactor)
-                par <- c(log(D), log(lambda0), log(sigma))
+            if (detectfn[i] %in% 14:18) {
+                dp <- list(lambda0 = lambda0[i], sigma = sigma[i], 
+                           recapfactor = recapfactor[i])
             }
             else {
-                dp <- list(g0 = g0, sigma = sigma, recapfactor = recapfactor)
-                par <- c(log(D), logit(g0), log(sigma))
+                dp <- list(g0 = g0[i], sigma = sigma[i], 
+                           recapfactor = recapfactor[i])
             }
-
+            
             #####################
             ## override det args as required
             detarg$traps <- grid
             detarg$popn <- pop
             detarg$detectpar <- dp
-            detarg$detectfn <- detectfn
-            detarg$noccasions <- noccasions
-
+            detarg$detectfn <- detectfn[i]
+            detarg$noccasions <- noccasions[i]
+           
             #####################
             ## simulate detection
             ## replaced 2014-04-27
             ## CH <- sim.capthist(grid, popn = pop, detectpar = dp,
             ##                   detectfn = detectfn, noccasions = noccasions)
-            CH <- do.call(sim.capthist, detarg)
-            if (!is.na(nrepeats))
-            attr(CH, "n.mash") <- rep(NA,nrepeats)
-
-            #####################
-            ## massage results
-            if (!fit) {
-                extractfn(CH,...)
+            CHi <- do.call(sim.capthist, detarg)
+            if (!is.na(nrepeats[i]))
+                attr(CHi, "n.mash") <- rep(NA, nrepeats[i])
+            CH[[i]] <- CHi
+        }
+        if (ns > 1) {
+            ## assume a 'group' column is present if ns>1
+            names(CH) <- 1:ns         
+            if (multisession) {
+                CH <- MS.capthist(CH)           
+                if (!is.null(group)) session(CH) <- group
+                CH
             }
             else {
-                fitarg$capthist <- CH
-                fitarg$mask <- mask
-                if ((fitarg$start == 'true') | (fitarg$method == 'none')) {
-                    ## check to see if simple 'true' values will work
-                    ## requires intercept-only model for all parameters
-                    model <- eval(fitarg$model)
-                    if (!is.list(model)) model <- list(model)
-                    vars <- lapply(lapply(model, terms), attr, 'term.labels')
-                    if (length(unlist(vars)) == 0) {
-                        fitarg$start <- par
-                    }
-                    else {
-                        ## not yet ready for interspersed beta coef
-                        warning("using automatic start values")
-                        fitarg$start <- NULL
-                    }
-                }
-                fitarg$trace <- FALSE
-                fit <- try(do.call(secr.fit, fitarg))
-                extractfn(fit,...)
+                nc <- sapply(CH, nrow)
+                CH$verify <- FALSE
+                CH <- do.call(rbind.capthist, CH)
+                covariates(CH)$group <- rep(group, nc)
+                CH
+            }
+        }
+        else {
+            CH[[1]]
+        }
+    })
+}
+#####################
+processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
+        if (!fit) {  
+        extractfn(CH, ...)
+    }
+    else {
+        ## form par for starting values in secr.fit()
+        ## 'par' does not allow for varying link or any non-null model (b, T etc.)
+        ## D, lambda0, g0, sigma are columns in 'scenario'
+        par <- with(scenario, {
+            wt <- D/sum(D)
+            
+            if (detectfn[1] %in% 14:18) {
+                c(log(sum(D)), log(sum(lambda0*wt)), log(sum(sigma*wt)))
+            }
+            else {
+                c(log(sum(D)), logit(sum(g0*wt)), log(sum(sigma*wt)))
             }
         })
+        ## prepare arguments for secr.fit()
+        fitarg$capthist <- CH
+     
+        if (is.null(fitarg$model))
+            fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
+        if ((fitarg$start == 'true') | (fitarg$method == 'none')) {
+            ## check to see if simple 'true' values will work
+            ## requires intercept-only model for all parameters
+            model <- eval(fitarg$model)
+            if (!is.list(model)) model <- list(model)
+            vars <- lapply(lapply(model, terms), attr, 'term.labels')
+            if (length(unlist(vars)) == 0) {
+                fitarg$start <- par
+            }
+            else {
+                ## not yet ready for interspersed beta coef
+                warning("using automatic start values")
+                fitarg$start <- NULL
+            }
+        }
+        fitarg$trace <- FALSE
+        fit <- try(do.call(secr.fit, fitarg))
+        extractfn(fit,...)
+    }
+}
+
+###############################################################################
+run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
+    nx = 32, pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL,
+    multisession = FALSE, ncores = 1, seed = 123, ...) {
+
+    #--------------------------------------------------------------------------
+    onesim <- function (scenario) {
+        ## 2014-11-23 allow multi-line scenarios
+        ## only one mask an fitarg allowed per scenario
+        fitarg <- full.fit.args[[scenario$fitindex[1]]]
+        fitarg$mask <- maskset[[scenario$maskindex[1]]]
+        CH <- makeCH(scenario, trapset, full.pop.args, full.det.args, 
+                     fitarg$mask, multisession)
+        processCH(scenario, CH, fitarg, extractfn, fit, ...)
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         out <- vector('list', nrepl)
-        for (r in 1:nrepl) {
-            out[[r]] <- onesim(x)
-        }
-        cat("Completed scenario ", x$scenario, '\n')
+        for (r in 1:nrepl) out[[r]] <- onesim(x)
+        cat("Completed scenario ", x$scenario[1], '\n')
         out
     }
     ##--------------------------------------------------------------------------
@@ -168,6 +239,8 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     if (ncores > nrow(scenarios))
         stop ("ncores exceeds number of scenarios")
+    if (multisession & !anyDuplicated(scenarios$scenario))
+        warning ("multisession = TRUE ignored because no scenario duplicated")
 
     ##--------------------------------------------
     ## default extractfn
@@ -198,13 +271,14 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     ##---------------------------------------------
     ## allow user changes to default sim.popn arguments
     default.args <- as.list(args(sim.popn))[1:12]
+    default.args$model2D  <- eval(default.args$model2D)[1]   ## 2014-09-03
     if (missing(pop.args)) pop.args <- NULL
     pop.args <- wrapifneeded(pop.args, default.args)
     full.pop.args <- fullargs (pop.args, default.args, scenarios$popindex)
 
     ##---------------------------------------------
-    ## allow user changes to default sim.capthist arguments
-    default.args <- as.list(args(sim.capthist))[1:13]
+    ## allow user changes to default sim.capthist arguments 
+    default.args <- as.list(args(sim.capthist))[1:15]
     if (missing(det.args)) det.args <- NULL
     det.args <- wrapifneeded(det.args, default.args)
     full.det.args <- fullargs (det.args, default.args, scenarios$detindex)
@@ -215,6 +289,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     default.args$biasLimit <- NA   ## never check
     default.args$verify <- FALSE   ## never check
     default.args$start <- "true"   ## known values
+    default.args$detectfn <- 0     ## halfnormal
     if (missing(fit.args)) fit.args <- NULL
     fit.args <- wrapifneeded(fit.args, default.args)
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
@@ -250,7 +325,8 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     for (i in 1:nrow(scenarios)) {
         pi <- scenarios$popindex[i]
         mi <- scenarios$maskindex[i]
-        if (full.pop.args[[pi]]$model2D == 'IHP') {
+        if ((full.pop.args[[pi]]$model2D %in% c('IHP', 'linear')) &
+            (is.character(full.pop.args[[pi]]$D))) {          ## linear 2014-09-03
             avD <- mean (covariates(maskset[[mi]])[,full.pop.args[[pi]]$D])
             scenarios[i, 'nrepeats'] <- 1   ## override
             scenarios[i, 'D'] <- avD
@@ -334,7 +410,9 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     else if (outputtype %in% c("selectedstatistics"))
         class(value) <- c("selectedstatistics", 'secrdesign', 'list')
     if (outputtype == 'regionN')
-        attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
+        ## attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
+        ## 2014-11-12
+        attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
     ## otherwise class remains 'list'
 
     value
@@ -350,69 +428,23 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
                            ncores = 1, ...) {
 
     #--------------------------------------------------------------------------
-    onesim <- function (scenario, CH) {
-        if (nrow(scenario) != 1) stop()
-        with( scenario, {
-
-            ## retrieve data
-            grid <- trapset[[trapsindex]]
-            mask <- maskset[[maskindex]]
-            fitarg <- full.fit.args[[fitindex]]
-            if (!fit) {
-                extractfn(CH,...)
-            }
-            else {
-                fitarg$capthist <- CH
-                fitarg$mask <- mask
-                startD <- D*nrepeats
-
-                #####################
-                ## form dp for sim.capthist
-                ## form par for starting values in secr.fit()
-                ## 'par' does not allow for varying link or any non-null model (b, T etc.)
-                if (detectfn %in% 14:18) {
-                    par <- c(log(startD), log(lambda0), log(sigma))
-                }
-                else {
-                    par <- c(log(startD), logit(g0), log(sigma))
-                }
-
-                if ((fitarg$start == 'true') | (fitarg$method == 'none')) {
-
-                    ## check to see if simple 'true' values will work
-                    ## requires intercept-only model for all parameters
-                    model <- eval(fitarg$model)
-                    if (!is.list(model)) model <- list(model)
-                    vars <- lapply(lapply(model, terms), attr, 'term.labels')
-                    if (length(unlist(vars)) == 0) {
-                        fitarg$start <- par
-                    }
-                    else {
-                        ## not yet ready for interspersed beta coef
-                        warning("using automatic start values")
-                        fitarg$start <- NULL
-                    }
-
-                }
-                fitarg$trace <- FALSE
-                fit <- try(do.call(secr.fit, fitarg))
-                extractfn(fit,...)
-            }
-        })
-    }
+    onesim <- function (scenario, CH) {    
+        fitarg <- full.fit.args[[scenario$fitindex[1]]]
+        fitarg$mask <- maskset[[scenario$maskindex[1]]]   
+        processCH(scenario, CH, fitarg, extractfn, fit, ...)
+    }    
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         out <- vector('list', nrepl)
-        for (r in 1:nrepl) {
-                out[[r]] <- onesim(x, CHlist[[trunc(x$scenario)]][[r]])
+        for (r in 1:nrepl) {            
+            out[[r]] <- onesim(x, CHlist[[trunc(x$scenario[1])]][[r]])
         }
-        cat("Completed scenario ", x$scenario, '\n')
+        cat("Completed scenario ", x$scenario[1], '\n')
         out
     }
     ##--------------------------------------------------------------------------
 
     ## mainline
-
     if (!inherits(rawdata, "rawdata"))
         stop ("requires rawdata output from run.scenarios()")
     CHlist <- rawdata$output
@@ -437,7 +469,7 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     default.args$biasLimit <- NA   ## never check
     default.args$verify <- FALSE   ## never check
     default.args$start <- "true"   ## known values
-
+    default.args$detectfn <- 0     ## halfnormal
     if (missing(fit.args)) fit.args <- NULL
     fit.args <- wrapifneeded(fit.args, default.args)
     nfit <- length(fit.args)
@@ -530,7 +562,9 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     else if (outputtype %in% c("selectedstatistics"))
         class(value) <- c("selectedstatistics", 'secrdesign', 'list')
     if (outputtype == 'regionN')
-        attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
+        ## attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
+        ## 2014-11-12
+        attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
     ## otherwise class remains 'list'
 
     value
