@@ -1,8 +1,7 @@
 citHeader("To cite package 'secrdesign' in publications use:")
 
-desc <- packageDescription("secrdesign")
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", desc$Date)
-vers <- paste("R package version", desc$Version)
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
+vers <- paste("R package version", meta$Version)
 url <- "http://CRAN.R-project.org/package=secrdesign"
 
 citEntry(entry="Manual",

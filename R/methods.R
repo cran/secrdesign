@@ -225,6 +225,7 @@ summary.selectedstatistics <- function (object,
         }
         varying <- apply(object$scenarios,2, function(x) length(unique(x)))>1
         varying[1] <- FALSE ## drop scenario code
+        
         tmp <- lapply (object$output, function(y) round(t(apply(y,2,sumx)), dec))
         tmp <- lapply(tmp, tidy)
 
