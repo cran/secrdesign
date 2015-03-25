@@ -2,6 +2,7 @@
 ## package 'secrdesign'
 ## select.stats.R
 ## 2014-11-25 moved from methods.R
+## 2015-02-17 user-specified 'true' values
 ###############################################################################
 
 weighted <- function (scenario, param) {
@@ -20,7 +21,7 @@ weighted <- function (scenario, param) {
     })
 }
 
-select.stats <- function (object, parameter = 'D', statistics) {
+select.stats <- function (object, parameter = 'D', statistics, true) {
     
     if (!inherits(object, 'estimatetables'))
         stop ("select.stats requires input of class estimatetables")
@@ -122,7 +123,7 @@ select.stats <- function (object, parameter = 'D', statistics) {
                             ifelse(length(no) == 0, TRUE, no)
                         }
                         )
-    ## trueD <- object$scenarios[,'D']    ## vector length = number of scenarios
+    if (missing(true)) {
     splitScenarios <- split(object$scenarios, object$scenarios$scenario)
     trueD <- sapply(splitScenarios, weighted, param='D')   ## vector length = number of scenarios
 
@@ -138,7 +139,9 @@ select.stats <- function (object, parameter = 'D', statistics) {
             true <- sapply(splitScenarios, weighted, parameter)
     }
     else true <- NA
-
+}
+else if (length(true) != length(object$output))
+    stop ("specify one 'true' value for each scenario")
     object$output <- mapply(extractfn,
                             object$output,
                             true,

@@ -164,13 +164,13 @@ summary.estimatetables <- function (object, ...) {
 summary.selectedstatistics <- function (object,
                                 fields = c('n', 'mean', 'se'),
                                 dec = 5,
-                                alpha = 0.05, type = c('list','dataframe','array'),
+                                alpha = 0.05,
+                                type = c('list','dataframe','array'),
                                 ...) {
     if (length(fields) == 1)
         if (tolower(fields) == 'all')
             fields <- c('n', 'mean', 'sd', 'se', 'min', 'max', 'lcl', 'ucl', 'q025',
                         'median', 'q975', 'rms')
-
     z      <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     alpha1 <- 0.025
     alpha3 <- 0.975
@@ -225,7 +225,7 @@ summary.selectedstatistics <- function (object,
         }
         varying <- apply(object$scenarios,2, function(x) length(unique(x)))>1
         varying[1] <- FALSE ## drop scenario code
-        
+
         tmp <- lapply (object$output, function(y) round(t(apply(y,2,sumx)), dec))
         tmp <- lapply(tmp, tidy)
 
@@ -282,7 +282,8 @@ summary.selectedstatistics <- function (object,
         out <- list(header = header(object), OUTPUT = tmp)
     }
     ## wrap at 'group'
-    names(out$OUTPUT) <- degroup(names(out$OUTPUT))
+    out$scenariodetail <- unlist(degroup(names(out$OUTPUT)))
+    names(out$OUTPUT) <- as.character(unique(object$scenarios$scenario))
     class (out) <- c('summarysecrdesign', 'list')
     out
 }
@@ -292,7 +293,7 @@ degroup <- function (x) {
         x <- strsplit(x, 'group')
         x <- lapply(x, function(y) y[nchar(y)>1])
         x <- lapply(x, function(y) paste('group', y, sep=''))
-        lapply(x, paste, collapse = '\n  ')
+        lapply(x, paste, collapse = '\n ')
     }
     else x
 }
@@ -330,7 +331,16 @@ print.summarysecrdesign <- function (x, ...) {
 
     if (!is.null(x$OUTPUT)) {
         cat('OUTPUT\n')
-        print(x$OUTPUT)
+        ## replaced 2015-01-27
+        ## print(x$OUTPUT)
+        for (i in 1:length(x$OUTPUT)) {
+            cat ('\n$', names(x$OUTPUT)[i], sep = '')
+            if (is.null(x$scenariodetail))
+                cat ('\n')
+            else
+                cat ('\n', x$scenariodetail[i], '\n ')
+            print(x$OUTPUT[[i]])
+        }
     }
 }
 

@@ -39,18 +39,22 @@ make.scenarios (trapsindex = 1:3, noccasions = c(8,4,2), D = 5, g0 = 0.2,
 #      NULL, multisession = FALSE, ncores = 1, seed = 123)
 
 ## ----------------------------------------------------------------------------------
-extractfn  <- function(x) {
+extractfn <- function(x) {
     if (inherits(x, 'capthist')) {
         ## summarised raw data
         counts <- function(CH) {
             ## for single-session CH
-            nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
-            ## detectors per animal
-            dpa <- if (length(dim(CH)) == 2)
-                mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
-            else
-                mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-            c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+            if (nrow(CH)==0) 
+                c(n=0, ndet=0, nmov=0, dpa = NA)
+            else {
+                nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+                ## detectors per animal
+                dpa <- if (length(dim(CH)) == 2)
+                    mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+                else
+                    mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+                c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+            }
         }
         if (ms(x)) 
             unlist(lapply(x, counts))

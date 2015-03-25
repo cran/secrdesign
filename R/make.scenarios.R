@@ -41,7 +41,8 @@ make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
         names(parameters)[names(parameters)=='g0'] <- 'lambda0'
     }
     if (!all(sapply(parameters[-1], is.numeric)))
-        stop ("must provide all detection parameters")
+        ## stop ("must provide all detection parameters")
+        warning ("not all detection parameters provided: complete manually")
 
     value <- do.call (expand.grid, c(trapping, parameters, list(stringsAsFactors = FALSE)))
 

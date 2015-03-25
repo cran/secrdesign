@@ -43,7 +43,7 @@ run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     multisession = FALSE, ncores = 1, seed = 123, ...)
 
 fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
-    ncores = 1, ...)
+    ncores = 1, scen, repl, ...)
 }
 
 \arguments{
@@ -69,7 +69,9 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   \item{seed}{integer pseudorandom number seed}
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
-}
+  \item{scen}{integer vector of scenario subscripts}
+  \item{repl}{integer vector of subscripts in range 1:nrepl}
+  }
 
 \details{
 
@@ -110,6 +112,8 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   \code{\link{summary.secrdesign}}). It is usually necessary to process
   the simulation results further with \code{\link{predict.fittedmodels}}
   and/or \code{\link{select.stats}} before summarization.
+  
+  In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to select a subset of datasets for model fitting.
 
 }
 

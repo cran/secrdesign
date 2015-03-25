@@ -17,7 +17,7 @@
 
 \usage{
 
-select.stats(object, parameter = "D", statistics)
+select.stats(object, parameter = "D", statistics, true)
 find.param(object)
 find.stats(object)
 
@@ -27,6 +27,7 @@ find.stats(object)
   \item{object}{`estimatetables' object from \code{\link{run.scenarios}}}
   \item{parameter}{character name of parameter to extract}
   \item{statistics}{character vector of statistic names}
+  \item{true}{numeric vector of `'true' values of parameter, one per scenario}
 }
 
 \details{
@@ -68,6 +69,9 @@ root-mean-squared-error RMSE.
 \code{find.param} and \code{find.stats} may be used to `peek' at objects
 of class `estimatetables' and `selectedstatistics' respectively to
 recall the available parameter estimates or `statistics'.
+
+An attempt is made to extract \code{true} automatically if it is not provided. This does not always work (e.g. with extractfn \code{region.N}, region differing from the mask, and a heterogeneous density model). Check this by including ``true'' as a statistic to summarise (see Examples).
+
 }
 
 \value{
@@ -93,9 +97,9 @@ recall the available parameter estimates or `statistics'.
 scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 traps1 <- make.grid()
 tmp1 <- run.scenarios(nrepl = 2, trapset = traps1, scenarios = scen1,
-    fit = TRUE, extractfn = trim)
+    fit = TRUE, extractfn = secr::trim)
 tmp2 <- predict(tmp1)
-tmp3 <- select.stats(tmp2, 'D', c('estimate','RB','RSE','COV'))
+tmp3 <- select.stats(tmp2, 'D', c('estimate','true','RB','RSE','COV'))
 summary(tmp3)
 }
 

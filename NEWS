@@ -1,3 +1,21 @@
+Changes in version 2.3.0 (2015-03-25)
+
+New features or changed behaviour of old functions
+
+    o   fit.models() acquires arguments 'scen' and 'repl' to select a subset of rawdata
+    o   run.scenarios() and fit.models() when predict.secr returns a list the default 
+        extractfn selects first session or group, with a warning (previously crashed)
+    o   summary.selectedstatistics() has improved labelling of output
+    o   select.stats() acquires argument 'true' for user override of 'true' values
+
+Bugs fixed
+    o   fit.models() did not work with grouped populations
+    o   default extractfn failed when no detections and fit = FALSE
+    o   run.scenarios() dots argument (...) not passed to worker processes
+
+Other
+    o   more robust handling of start values for secr.fit()
+
 Changes in version 2.2.2 (2015-01-11)
 
 Other

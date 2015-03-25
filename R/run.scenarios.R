@@ -11,6 +11,10 @@
 ## 2014-09-03 linear mask tweaks
 ## 2014-11-23 groups
 ## 2014-11-24 new functions makeCH and processCH used by onesim()
+## 2015-01-26 defaultextractfn updated
+## 2015-01-26 streamlined outputtype (function getoutputtype called by both run.scenarios and fit.models)
+## 2015-01-26 scen and repl argument for fit.models
+## 2015-01-27 more robust handling of start values in processCH
 ###############################################################################
 
 ###############################################################################
@@ -46,84 +50,102 @@ fullargs <- function (args, default, index) {
 ###############################################################################
 
 defaultextractfn <- function(x) {
-    if (inherits(x, 'capthist')) {
+    ## 2015-01-27
+    if (inherits(x, 'try-error')) {
+        ## null output: dataframe of 0 rows and 0 columns
+        data.frame()
+    }
+    else if (inherits(x, 'capthist')) {
         ## summarised raw data
         counts <- function(CH) {
             ## for single-session CH
-            nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
-            ## detectors per animal
-            dpa <- if (length(dim(CH)) == 2)
-                mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
-            else
-                mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-            c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+            if (nrow(CH)==0)  ## 2015-01-24
+                c(n=0, ndet=0, nmov=0, dpa = NA)
+            else {
+                nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+                ## detectors per animal
+                dpa <- if (length(dim(CH)) == 2)
+                    mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+                else
+                    mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+                c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+            }
         }
-        if (ms(x)) 
+        if (ms(x))
             unlist(lapply(x, counts))
         else {
             gp <- covariates(x)$group
-            if (is.null(gp)) 
+            if (is.null(gp))
                 counts(x)
-            else 
+            else
                 unlist(lapply(split(x,gp,dropnullocc=TRUE), counts))
-        }            
+        }
     }
-    else if (inherits(x,'secr') & (!is.null(x$fit)))
+    else if (inherits(x,'secr') & (!is.null(x$fit))) {
         ## fitted model:
         ## default predictions of 'real' parameters
-        predict(x)
+        out <- predict(x)
+        if (is.data.frame(out))
+            out
+        else {
+            ## 2015-01-26
+            warning ("summarising only first session, group or mixture class")
+            out[[1]]
+        }
+    }
     else
         ## null output: dataframe of 0 rows and 0 columns
-        data.frame()   
+        data.frame()
 }
 
 #####################
 makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multisession) {
-    ns <- nrow(scenario)    
+    ns <- nrow(scenario)
     with( scenario, {
         CH <- vector(mode = 'list', ns)
+
         for (i in 1:ns) {
             #####################
             ## retrieve data
             grid <- trapset[[trapsindex[i]]]
-            poparg <- full.pop.args[[popindex[i]]]  
-            detarg <- full.det.args[[detindex[i]]]  
-         
+            poparg <- full.pop.args[[popindex[i]]]
+            detarg <- full.det.args[[detindex[i]]]
+
             #####################
             ## override D, core, buffer
             if (inherits(mask, 'linearmask'))               ## force to linear...
                 poparg$model2D <- 'linear'
-            if (poparg$model2D %in% c('IHP', 'linear')) {   ## linear        
-                poparg$core <- mask  
+            if (poparg$model2D %in% c('IHP', 'linear')) {   ## linear
+                poparg$core <- mask
                 ## for 'linear' case we may want a constant numeric value
                 if (!is.character(poparg$D) & (length(poparg$D)<nrow(mask)))
-                    poparg$D <- D[i]     
+                    poparg$D <- D[i]
                 if (nrepeats[i]!=1)
                     stop("nrepeats > 1 not allowed for IHP, linear")
-            }            
+            }
             else {
-                poparg$core <- attr(mask, "boundingbox")  
+                poparg$core <- attr(mask, "boundingbox")
                 poparg$D <- D[i]*nrepeats[i]
             }
             poparg$buffer <- 0
-        
+
             #####################
             ## generate population
             pop <- do.call(sim.popn, poparg)
-                         
+
             #####################
             ## form dp for sim.capthist
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
             if (detectfn[i] %in% 14:18) {
-                dp <- list(lambda0 = lambda0[i], sigma = sigma[i], 
+                dp <- list(lambda0 = lambda0[i], sigma = sigma[i],
                            recapfactor = recapfactor[i])
             }
             else {
-                dp <- list(g0 = g0[i], sigma = sigma[i], 
+                dp <- list(g0 = g0[i], sigma = sigma[i],
                            recapfactor = recapfactor[i])
             }
-            
+
             #####################
             ## override det args as required
             detarg$traps <- grid
@@ -131,7 +153,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
             detarg$detectpar <- dp
             detarg$detectfn <- detectfn[i]
             detarg$noccasions <- noccasions[i]
-           
+
             #####################
             ## simulate detection
             ## replaced 2014-04-27
@@ -144,9 +166,9 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
         }
         if (ns > 1) {
             ## assume a 'group' column is present if ns>1
-            names(CH) <- 1:ns         
+            names(CH) <- 1:ns
             if (multisession) {
-                CH <- MS.capthist(CH)           
+                CH <- MS.capthist(CH)
                 if (!is.null(group)) session(CH) <- group
                 CH
             }
@@ -165,7 +187,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
 }
 #####################
 processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
-        if (!fit) {  
+    if (!fit) {
         extractfn(CH, ...)
     }
     else {
@@ -174,38 +196,80 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
         ## D, lambda0, g0, sigma are columns in 'scenario'
         par <- with(scenario, {
             wt <- D/sum(D)
-            
+            ## 2015-01-27
             if (detectfn[1] %in% 14:18) {
-                c(log(sum(D)), log(sum(lambda0*wt)), log(sum(sigma*wt)))
+                list(D = sum(D), lambda0 = sum(lambda0*wt), sigma = sum(sigma*wt))
             }
             else {
-                c(log(sum(D)), logit(sum(g0*wt)), log(sum(sigma*wt)))
+                list(D = sum(D), g0 = sum(g0*wt), sigma = sum(sigma*wt))
             }
         })
         ## prepare arguments for secr.fit()
         fitarg$capthist <- CH
-     
+
         if (is.null(fitarg$model))
             fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
-        if ((fitarg$start == 'true') | (fitarg$method == 'none')) {
+        if (fitarg$start[1] == 'true') {
             ## check to see if simple 'true' values will work
             ## requires intercept-only model for all parameters
             model <- eval(fitarg$model)
             if (!is.list(model)) model <- list(model)
-            vars <- lapply(lapply(model, terms), attr, 'term.labels')
-            if (length(unlist(vars)) == 0) {
-                fitarg$start <- par
-            }
-            else {
+            vars <- unlist(lapply(lapply(model, terms), attr, 'term.labels'))
+            if (fitarg$CL) par$D <- NULL
+            if ('h2' %in% vars) par$pmix <- 0.5
+            fitarg$start <- par
+            if ((length(vars) != 0) & (fitarg$method == 'none')) {
                 ## not yet ready for interspersed beta coef
-                warning("using automatic start values")
-                fitarg$start <- NULL
+                stop("method = 'none' requires full start vector for complex models")
             }
         }
         fitarg$trace <- FALSE
         fit <- try(do.call(secr.fit, fitarg))
-        extractfn(fit,...)
+        extractfn(fit, ...)
     }
+}
+#####################
+
+getoutputtype <- function (output) {
+    typical <- output[[1]][[1]]
+    ## outputtype: secrfit, predicted, coef, numeric
+    outputtype <-
+        if (inherits(typical, 'secr'))
+            'secrfit'
+        else if (inherits(typical, 'data.frame')) {
+            if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
+                    any(c('R.N','E.N') %in% rownames(typical)))
+                'regionN'
+            else if ( all(c('estimate','SE.estimate','lcl','ucl', 'CVn') %in% names(typical)))
+                'derived'
+            else if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)))
+                'predicted'
+            else if (all(c('beta','SE.beta','lcl','ucl') %in% names(typical)))
+                'coef'
+            else 'user'
+        }
+        else if (inherits(typical, 'capthist'))          ## rawdata
+            'capthist'
+        else if (is.vector(typical, mode = 'numeric'))   ## usually, summary of unfitted data
+            'selectedstatistics'
+        else
+            'user'
+    outputtype
+}
+#####################
+
+getoutputclass <- function (outputtype) {
+    switch (outputtype,
+            secrfit = c("fittedmodels", 'secrdesign', 'list'),
+            predicted = c("estimatetables", 'secrdesign', 'list'),
+            derived = c("estimatetables", 'secrdesign', 'list'),
+            regionN = c("estimatetables", 'secrdesign', 'list'),
+            coef = c("estimatetables", 'secrdesign', 'list'),
+            user = c("estimatetables", 'secrdesign', 'list'),
+            capthist = c("rawdata", 'secrdesign', 'list'),
+            selectedstatistics = c("selectedstatistics", 'secrdesign', 'list'),
+            list      ## otherwise
+    )
 }
 
 ###############################################################################
@@ -219,7 +283,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         ## only one mask an fitarg allowed per scenario
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
         fitarg$mask <- maskset[[scenario$maskindex[1]]]
-        CH <- makeCH(scenario, trapset, full.pop.args, full.det.args, 
+        CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
                      fitarg$mask, multisession)
         processCH(scenario, CH, fitarg, extractfn, fit, ...)
     }
@@ -277,7 +341,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     full.pop.args <- fullargs (pop.args, default.args, scenarios$popindex)
 
     ##---------------------------------------------
-    ## allow user changes to default sim.capthist arguments 
+    ## allow user changes to default sim.capthist arguments
     default.args <- as.list(args(sim.capthist))[1:15]
     if (missing(det.args)) det.args <- NULL
     det.args <- wrapifneeded(det.args, default.args)
@@ -337,11 +401,8 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     ## run simulations
     tmpscenarios <- split(scenarios, scenarios$scenario)
     if (ncores > 1) {
-        ## drop logfile 2014-04-06
-        ## clust <- makeCluster(ncores, methods = TRUE, outfile = logfile)
+        list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
         clust <- makeCluster(ncores, methods = TRUE)
-        ## outfile = "" redirects worker output to local console;
-        ## does not work on Rgui but works on Rterm and Unix
         clusterSetRNGStream(clust, seed)
         clusterExport(clust,
                       c("onesim", "trapset", "maskset", "fit", "extractfn",
@@ -356,27 +417,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     }
     ##-------------------------------------------
     ## tidy output
-    typical <- output[[1]][[1]]
-    ## outputtype: secrfit, predicted, coef, numeric
-    outputtype <-
-        if (inherits(typical, 'secr')) 'secrfit'
-        else if (inherits(typical, 'data.frame')) {
-                 if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
-                     any(c('R.N','E.N') %in% rownames(typical)))
-                     'regionN'
-                 else if ( all(c('estimate','SE.estimate','lcl','ucl', 'CVn') %in% names(typical)))
-                     'derived'
-                 else if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)))
-                     'predicted'
-                 else if (all(c('beta','SE.beta','lcl','ucl') %in% names(typical)))
-                     'coef'
-                 else 'user'
-             }
-        else if (inherits(typical, 'capthist'))          ## rawdata
-            'capthist'
-        else if (is.vector(typical, mode = 'numeric'))   ## usually, summary of unfitted data
-            'selectedstatistics'
-        else 'user'
+    outputtype <- getoutputtype(output)
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix
         output <- lapply(output, do.call, what = rbind)
@@ -400,20 +441,10 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
                    nrepl = nrepl,
                    output = output,
                    outputtype = outputtype
-                   )
-    if (outputtype %in% c("secrfit"))
-        class(value) <- c("fittedmodels", 'secrdesign', 'list')
-    else if (outputtype %in% c("predicted", "derived", "regionN", "coef", "user"))
-        class(value) <- c("estimatetables", 'secrdesign', 'list')
-    else if (outputtype %in% c("capthist"))
-        class(value) <- c("rawdata", 'secrdesign', 'list')
-    else if (outputtype %in% c("selectedstatistics"))
-        class(value) <- c("selectedstatistics", 'secrdesign', 'list')
+    )
+    class(value) <- getoutputclass(outputtype)
     if (outputtype == 'regionN')
-        ## attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
-        ## 2014-11-12
         attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
-    ## otherwise class remains 'list'
 
     value
 }
@@ -425,31 +456,58 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
 ## expands scenarios for multiple model definitions
 
 fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
-                           ncores = 1, ...) {
+                        ncores = 1, scen, repl, ...) {
 
     #--------------------------------------------------------------------------
-    onesim <- function (scenario, CH) {    
+    onesim <- function (scenario, CH) {
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
-        fitarg$mask <- maskset[[scenario$maskindex[1]]]   
+        fitarg$mask <- maskset[[scenario$maskindex[1]]]
         processCH(scenario, CH, fitarg, extractfn, fit, ...)
-    }    
+    }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         out <- vector('list', nrepl)
-        for (r in 1:nrepl) {            
-            out[[r]] <- onesim(x, CHlist[[trunc(x$scenario[1])]][[r]])
+        for (r in 1:nrepl) {
+            ## match by name, not number 2015-01-27
+            scenID <- as.character(trunc(x$scenario[1]))
+            out[[r]] <- onesim(x, CHlist[[scenID]][[r]])
         }
         cat("Completed scenario ", x$scenario[1], '\n')
         out
     }
     ##--------------------------------------------------------------------------
-
     ## mainline
     if (!inherits(rawdata, "rawdata"))
         stop ("requires rawdata output from run.scenarios()")
-    CHlist <- rawdata$output
-    nrepl <- rawdata$nrepl
-    scenarios <- rawdata$scenarios
+
+    ## optionally select which scenarios to fit
+    if (missing(scen)) {
+        scen <- unique(rawdata$scenarios$scenario)
+    }
+    else {
+        scen <- unique(scen)
+        if (!all(scen %in% unique(rawdata$scenarios$scenario)))
+            stop ("invalid scen argument")
+        if (length(scen)<1)
+            stop ("invalid scen argument")
+    }
+    ## optionally select which replicates to fit
+    if (missing(repl)) {
+        nrepl <- rawdata$nrepl
+        repl <- 1:nrepl
+    }
+    else {
+        repl <- unique(repl)
+        if (!all(repl %in% 1:rawdata$nrepl))
+            stop ("invalid repl argument")
+        nrepl <- length(repl)
+        if (nrepl<1)
+            stop ("invalid repl argument")
+    }
+
+    CHlist <- lapply(rawdata$output[scen], '[', repl)
+    scenarios <- rawdata$scenarios[rawdata$scenarios$scenario %in% scen,]
+
     trapset <- rawdata$trapset
     maskset <- rawdata$maskset
     ## record start time etc.
@@ -475,15 +533,16 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     nfit <- length(fit.args)
     if (nfit > 1) {
         ## expand scenarios by the required number of different model fits
-        scenarios <- scenarios[rep(scenarios$scenario, each = nfit),]
+        ##      scenarios <- scenarios[rep(scenarios$scenario, each = nfit),]
+        scenarios <- scenarios[rep(1:nrow(scenarios), each = nfit),]
         scenarios$fitindex <- rep(1:nfit, length.out = nrow(scenarios))
         ## assign new unique scenario number by adding decimal fraction
         scenarios$scenario <- scenarios$scenario + scenarios$fitindex /
             10 ^ trunc(log10(nfit)+1)
-        rownames(scenarios) <- scenarios$scenario
+        scenarios <- scenarios[order(scenarios$scenario),]
+        rownames(scenarios) <- 1:nrow(scenarios)
     }
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
-
     if (ncores > nrow(scenarios))
         stop ("ncores exceeds number of scenarios")
 
@@ -491,11 +550,7 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     ## run simulations
     tmpscenarios <- split(scenarios, scenarios$scenario)
     if (ncores > 1) {
-        ## drop logfile 2014-04-06
-        ## clust <- makeCluster(ncores, methods = TRUE, outfile = logfile)
         clust <- makeCluster(ncores, methods = TRUE)
-        ## outfile = "" redirects worker output to local console;
-        ## does not work on Rgui but works on Rterm and Unix
         clusterExport(clust,
                       c("onesim", "trapset", "maskset", "fit", "extractfn",
                         "full.fit.args", "CHlist"),
@@ -508,27 +563,7 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     }
     ##-------------------------------------------
     ## tidy output
-    typical <- output[[1]][[1]]
-    ## outputtype: secrfit, predicted, coef, numeric
-    outputtype <-
-        if (inherits(typical, 'secr')) 'secrfit'
-        else if (inherits(typical, 'data.frame')) {
-                 if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
-                     any(c('R.N','E.N') %in% rownames(typical)))
-                     'regionN'
-                 else if ( all(c('estimate','SE.estimate','lcl','ucl', 'CVn') %in% names(typical)))
-                     'derived'
-                 else if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)))
-                     'predicted'
-                 else if (all(c('beta','SE.beta','lcl','ucl') %in% names(typical)))
-                     'coef'
-                 else 'user'
-             }
-        else if (inherits(typical, 'capthist'))
-            'capthist'
-        else if (is.vector(typical, mode = 'numeric'))
-            'selectedstatistics'
-        else 'user'
+    outputtype <- getoutputtype(output)
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix
         output <- lapply(output, do.call, what = rbind)
@@ -549,23 +584,13 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
                    fit.args = fit.args,
                    extractfn = extractfn,
                    seed = rawdata$seed,
-                   nrepl = rawdata$nrepl,
+                   nrepl = nrepl,     ## rawdata$nrepl, 2015-01-26
                    output = output,
                    outputtype = outputtype
                    )
-    if (outputtype %in% c("secrfit"))
-        class(value) <- c("fittedmodels", 'secrdesign', 'list')
-    else if (outputtype %in% c("predicted", "derived", "regionN", "coef", "user"))
-        class(value) <- c("estimatetables", 'secrdesign', 'list')
-    else if (outputtype %in% c("capthist"))
-        class(value) <- c("rawdata", 'secrdesign', 'list')
-    else if (outputtype %in% c("selectedstatistics"))
-        class(value) <- c("selectedstatistics", 'secrdesign', 'list')
+    class(value) <- getoutputclass (outputtype)
     if (outputtype == 'regionN')
-        ## attr(value, 'regionarea') <- sapply(output, function(x) attr(x[[1]], 'regionarea'))
-        ## 2014-11-12
         attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
-    ## otherwise class remains 'list'
 
     value
 }
