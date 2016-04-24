@@ -14,8 +14,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.3.0\cr
-Date: \tab 2015-03-25\cr
+Version: \tab 2.4.0\cr
+Date: \tab 2016-04-23\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -27,6 +27,7 @@ parameters lambda0/g0 and sigma.
 The important functions in \pkg{secrdesign} are:
 \tabular{ll}{
   \code{\link{make.scenarios}} \tab generate dataframe of parameter values etc. \cr
+  \code{\link{scenariosFromStatistics}} \tab match specified n, r \cr
   \code{\link{run.scenarios}} \tab perform simulations, with or without model fitting \cr
   \code{\link{fit.models}} \tab fit SECR model(s) to rawdata output from \code{run.scenarios} \cr
   \code{\link{predict.fittedmodels}} \tab infer `real' parameter

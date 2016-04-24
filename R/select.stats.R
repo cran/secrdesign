@@ -3,11 +3,12 @@
 ## select.stats.R
 ## 2014-11-25 moved from methods.R
 ## 2015-02-17 user-specified 'true' values
+## 2016-02-04 fix weighted problem for param != 'D'
 ###############################################################################
 
-weighted <- function (scenario, param) {
-  
-    with(scenario, {
+weighted <- function (onescenario, param) {
+  ## 2016-02-04 rename argument scenario to onescenario to ensure OK for param != 'D'
+    with(onescenario, {
         if (param == 'D')
             sum(D)
         else if (param == 'pmix') {
@@ -16,7 +17,7 @@ weighted <- function (scenario, param) {
         }
         else {
             wt <- D/sum(D)
-            sum(scenario[,param] * wt)
+            sum(onescenario[,param] * wt)
         }
     })
 }

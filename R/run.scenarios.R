@@ -1,4 +1,4 @@
-##############################################################################
+#c#############################################################################
 ## package 'secrdesign'
 ## run.scenarios.R
 ## 2013-02-23, 24, 25, 26, 28
@@ -15,7 +15,8 @@
 ## 2015-01-26 streamlined outputtype (function getoutputtype called by both run.scenarios and fit.models)
 ## 2015-01-26 scen and repl argument for fit.models
 ## 2015-01-27 more robust handling of start values in processCH
-###############################################################################
+## 2015-11-03 default extract fn reports unmarked and nonID sightings
+## 2015-11-03 adapted for sim.resight etc.
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -68,7 +69,15 @@ defaultextractfn <- function(x) {
                     mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
                 else
                     mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-                c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
+                if (sighting(traps(CH))) {
+                    unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
+                    nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
+                    nzero <- sum(apply(abs(CH),1,sum) == 0)
+                    c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa,
+                      unmarked=unmarked, nonID = nonID, nzero = nzero)
+                }
+                else
+                    c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
             }
         }
         if (ms(x))
@@ -134,7 +143,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
             pop <- do.call(sim.popn, poparg)
 
             #####################
-            ## form dp for sim.capthist
+            ## form dp for sim.capthist or sim.resight
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
             if (detectfn[i] %in% 14:18) {
@@ -146,20 +155,30 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
                            recapfactor = recapfactor[i])
             }
 
+            ## 2016-03-06
+            dp <- replace (dp, names(detarg$detectpar), detarg$detectpar)
+
             #####################
             ## override det args as required
             detarg$traps <- grid
             detarg$popn <- pop
             detarg$detectpar <- dp
             detarg$detectfn <- detectfn[i]
-            detarg$noccasions <- noccasions[i]
+            if (!is.null(markocc(grid))) {
+                detarg$noccasions <- length(markocc(grid))
+                if (detarg$noccasions != noccasions[i])
+                    warning("length of markocc attribute overrides noccasions in scenario")
+            }
+            else
+                detarg$noccasions <- noccasions[i]
 
             #####################
             ## simulate detection
-            ## replaced 2014-04-27
-            ## CH <- sim.capthist(grid, popn = pop, detectpar = dp,
-            ##                   detectfn = detectfn, noccasions = noccasions)
-            CHi <- do.call(sim.capthist, detarg)
+            if (sighting(grid)) {
+                CHi <- do.call(sim.resight, detarg)
+            }
+            else
+                CHi <- do.call(sim.capthist, detarg)
             if (!is.na(nrepeats[i]))
                 attr(CHi, "n.mash") <- rep(NA, nrepeats[i])
             CH[[i]] <- CHi
@@ -194,6 +213,7 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
         ## form par for starting values in secr.fit()
         ## 'par' does not allow for varying link or any non-null model (b, T etc.)
         ## D, lambda0, g0, sigma are columns in 'scenario'
+
         par <- with(scenario, {
             wt <- D/sum(D)
             ## 2015-01-27
@@ -224,7 +244,35 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
             }
         }
         fitarg$trace <- FALSE
+
+        ##-------------------------------------------------------------------
+        ## 2015-11-03 code for overdispersion adjustment of mark-resight data
+        ## no simulations in first iteration; defer hessian
+        chatnsim <- fitarg$details$nsim
+        if (abs(chatnsim)>0) {
+            fitarg$details <- as.list(replace(fitarg$details, 'nsim', 0))
+            fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
+        }
+        ##-------------------------------------------------------------------
+
         fit <- try(do.call(secr.fit, fitarg))
+
+        ##-------------------------------------------------------------------
+        ## 2015-11-03 code for overdispersion adjustment of mark-resight data
+        ## 2016-03-06 patched
+        if (sighting(traps(CH)) & !inherits(fit, 'try-error')) {
+            if ((abs(chatnsim) > 0) &  (logLik(fit)>-1e9)) {
+                fitarg$details$nsim <- abs(chatnsim)
+                fitarg$details$hessian <- TRUE
+                fit$call <- NULL
+                fitarg$start <- fit
+                if (chatnsim<0)
+                    fitarg$method <- "none"
+                fit <- try(do.call(secr.fit, fitarg))
+            }
+        }
+        ##-------------------------------------------------------------------
+
         extractfn(fit, ...)
     }
 }
@@ -274,8 +322,8 @@ getoutputclass <- function (outputtype) {
 
 ###############################################################################
 run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
-    nx = 32, pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL,
-    multisession = FALSE, ncores = 1, seed = 123, ...) {
+    nx = 32, pop.args, det.args, fit = FALSE, fit.args, chatnsim = 0, extractfn = NULL,
+    multisession = FALSE, ncores = 1, seed = 123,  ...) {
 
     #--------------------------------------------------------------------------
     onesim <- function (scenario) {
@@ -291,7 +339,8 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     runscenario <- function(x) {
         out <- vector('list', nrepl)
         for (r in 1:nrepl) out[[r]] <- onesim(x)
-        cat("Completed scenario ", x$scenario[1], '\n')
+        message("Completed scenario ", x$scenario[1])
+        flush.console()
         out
     }
     ##--------------------------------------------------------------------------
@@ -327,6 +376,14 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
 
     dettype <- sapply(trapset, detector)[scenarios$trapsindex]
 
+    ## mark-resight options 2015-11-03
+    sight <- sapply(trapset, function(x)
+        if(ms(x)) sighting(x[[1]]) else  sighting(x))
+
+    if (!(all(sight) | all(!sight)))
+        stop ("cannot mix sighting and nonsighting simulations")
+    sight <- any(sight)
+
     OK <- !any((scenarios$nrepeats>1) & (dettype == "single"))
     OK <- if(is.na(OK)) TRUE else OK
     if (!OK)
@@ -341,11 +398,17 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     full.pop.args <- fullargs (pop.args, default.args, scenarios$popindex)
 
     ##---------------------------------------------
-    ## allow user changes to default sim.capthist arguments
-    default.args <- as.list(args(sim.capthist))[1:15]
+    ## allow user changes to default sim.capthist or sim.resight arguments
+    if (sight)
+        default.args <- as.list(args(sim.resight))[c(2,4:9)]  ## drop traps & ... argument
+    else
+        default.args <- as.list(args(sim.capthist))[1:15]
+
     if (missing(det.args)) det.args <- NULL
     det.args <- wrapifneeded(det.args, default.args)
     full.det.args <- fullargs (det.args, default.args, scenarios$detindex)
+
+    ## load detect args back into scenarios?
 
     ##---------------------------------------------
     ## allow user changes to default secr.fit arguments
@@ -357,7 +420,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     if (missing(fit.args)) fit.args <- NULL
     fit.args <- wrapifneeded(fit.args, default.args)
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
-
+    full.fit.args[[1]]$details <- as.list(replace(full.fit.args$details,'nsim',chatnsim))
     ##--------------------------------------------
     ## construct masks as required
     if (missing(maskset)) {
@@ -404,12 +467,8 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
         clust <- makeCluster(ncores, methods = TRUE)
         clusterSetRNGStream(clust, seed)
-        clusterExport(clust,
-                      c("onesim", "trapset", "maskset", "fit", "extractfn",
-                        "full.pop.args", "full.det.args", "full.fit.args"),
-                      environment())
         output <- parLapply(clust, tmpscenarios, runscenario)
-        on.exit(stopCluster(clust))
+        stopCluster(clust)
     }
     else {
         set.seed (seed)
@@ -421,7 +480,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix
         output <- lapply(output, do.call, what = rbind)
-    cat("Completed in", round((proc.time() - ptm)[3]/60,3), "minutes \n")
+    message("Completed in ", round((proc.time() - ptm)[3]/60,3), " minutes")
     desc <- packageDescription("secrdesign")  ## for version number
     value <- list (call = cl,
                    version = paste('secrdesign', desc$Version),
@@ -438,6 +497,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
                    fit.args = fit.args,
                    extractfn = extractfn,
                    seed = seed,
+                   chatnsim = chatnsim,
                    nrepl = nrepl,
                    output = output,
                    outputtype = outputtype
@@ -455,7 +515,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
 ## version of run.scenarios that accepts existing data and
 ## expands scenarios for multiple model definitions
 
-fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
+fit.models <- function (rawdata, fit = FALSE, fit.args, chatnsim = 0, extractfn = NULL,
                         ncores = 1, scen, repl, ...) {
 
     #--------------------------------------------------------------------------
@@ -472,7 +532,8 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
             scenID <- as.character(trunc(x$scenario[1]))
             out[[r]] <- onesim(x, CHlist[[scenID]][[r]])
         }
-        cat("Completed scenario ", x$scenario[1], '\n')
+        message("Completed scenario ", x$scenario[1])
+        flush.console()
         out
     }
     ##--------------------------------------------------------------------------
@@ -543,6 +604,33 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
         rownames(scenarios) <- 1:nrow(scenarios)
     }
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
+    full.fit.args[[1]]$details <- as.list(replace(full.fit.args$details,'nsim',chatnsim))
+
+    ## construct masks as required
+    if (is.null(maskset)) {
+        trapsigma <- scenarios[, c('trapsindex', 'sigma'), drop = FALSE]
+        uts <- unique (trapsigma)
+        code <- apply(uts, 1, paste, collapse='.')
+        scenarios$maskindex <- match(apply(trapsigma,1,paste,collapse='.'), code)
+        maskset <- vector('list', nrow(uts))
+        for (k in 1:nrow(uts))
+            maskset[[k]] <- make.mask(trapset[[uts$trapsindex[k]]], buffer = uts$sigma[k] *
+                                      rawdata$xsigma, type = 'trapbuffer', nx = rawdata$nx)
+    }
+    else {
+        uts <- NULL
+        if (is.null(scenarios$maskindex)) {
+            if ((length(maskset) == length(trapset)))
+                scenarios[,'maskindex'] <- scenarios$trapsindex
+            else if (length(maskset) == 1)
+                scenarios[,'maskindex'] <- 1
+            else
+                stop ("for irregular maskset provide maskindex as a column in scenarios")
+        }
+        if (max(scenarios$maskindex) > length(maskset))
+            stop ("maskindex does not match maskset")
+    }
+
     if (ncores > nrow(scenarios))
         stop ("ncores exceeds number of scenarios")
 
@@ -551,10 +639,6 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     tmpscenarios <- split(scenarios, scenarios$scenario)
     if (ncores > 1) {
         clust <- makeCluster(ncores, methods = TRUE)
-        clusterExport(clust,
-                      c("onesim", "trapset", "maskset", "fit", "extractfn",
-                        "full.fit.args", "CHlist"),
-                      environment())
         output <- parLapply(clust, tmpscenarios, runscenario)
         on.exit(stopCluster(clust))
     }
@@ -567,7 +651,7 @@ fit.models <- function (rawdata, fit = FALSE, fit.args, extractfn = NULL,
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix
         output <- lapply(output, do.call, what = rbind)
-    cat("Completed in", round((proc.time() - ptm)[3]/60,3), "minutes \n")
+    message("Completed in ", round((proc.time() - ptm)[3]/60,3), " minutes")
     desc <- packageDescription("secrdesign")  ## for version number
     value <- list (call = cl,
                    version = paste('secrdesign', desc$Version),

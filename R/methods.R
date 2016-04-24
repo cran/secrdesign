@@ -4,6 +4,7 @@
 ## 2014-02-07,08
 ## 2014-04-09, 2014--04-11, 2014-04-29
 ## 2014-11-25 select.stats moved to own file
+## 2015-11-26 collapsesubarg for header()
 ###############################################################################
 
 make.array <- function (object) {
@@ -94,17 +95,39 @@ collapsemodel <- function (arg) {
     arg
 }
 
+## 2015-11-26
+collapsesubarg <- function (arg,subarg) {
+    if (subarg %in% names(arg)) {
+        ab <- arg[[subarg]]
+        arg[[subarg]] <- paste(paste(names(ab),ab,sep='='), collapse=',')
+    }
+    arg
+}
+
 argdf <- function (args) {
     if (is.null(args))
         NULL
-    else {
+    else { 
         tmp <- lapply(args, dummyuserdist)
         tmp <- lapply(tmp, collapsemodel)
+        tmp <- lapply(tmp, collapsesubarg, 'details')
+        tmp <- lapply(tmp, collapsesubarg, 'start')
         tmp <- lapply(tmp, function(x) sapply(x, format))
         nm <- unique(unlist(lapply(tmp, names)))
         tmp0 <- matrix('', nrow = length(tmp), ncol = length(nm),
                        dimnames = list(NULL,  nm))
-        for (i in 1:length(tmp)) tmp0[i,names(tmp[[i]])] <- tmp[[i]]
+        ## 2015-05-14 need better labelling of e.g. fixed$sigma, start$g0, start$D
+        ## 2016-03-05 ad hoc fix... replace 'core' mask/matrix with scalar
+   
+        tmp <- lapply(tmp, function(x) {
+            if ("core" %in% names(x))
+            if (length(x$core)>1)
+                x$core <- 'core'
+            x})
+        for (i in 1:length(tmp)) 
+            # tmp0[i,names(tmp[[i]])] <- tmp[[i]]
+            tmp0[i,names(tmp[[i]])] <- unlist(tmp[[i]])
+        ## as.data.frame(t(unlist(tmp0)))  ## but this fails! 2015-11-03
         as.data.frame(tmp0)
     }
 }
@@ -129,6 +152,7 @@ header <- function (object) {
         popargs <- data.frame(popindex = pi, popargs[pi,,drop = FALSE])
 
     di <- unique(object$scenarios$detindex)
+
     detargs <- argdf(object$det.args)
     if (!is.null(detargs))
         detargs <- data.frame(detindex = di, detargs[di,,drop = FALSE])
@@ -238,6 +262,7 @@ summary.selectedstatistics <- function (object,
             new <- do.call(rbind, lapply(tmp, valstring))
             tmp <- cbind(object$scenarios[,varying], new)
         }
+    
         out <- list(header = header(object), OUTPUT = tmp)
     }
     ## array output

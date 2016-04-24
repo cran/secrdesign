@@ -1,3 +1,30 @@
+Changes in version 2.4.0 (2016-04-23)
+
+New features or changed behaviour of old functions
+    o   mark-resight data are simulated with secr::sim.resight if traps object
+    	has markocc attribute
+    o   run.scenarios() new argument chatnsim for simulating overdispersion of sightings
+    o   header() allows for complex 'details' and 'start' components
+    o   validate reports number of problem rows
+    	
+Bugs fixed
+    o   header() failed with model2D="IHP" (problem in argdf - temporary fix)
+    o   run.scenarios() respects detectpar component of det.args (see makeCH)
+
+Other
+    o   number of occasions in markocc overrides noccasions in scenario
+    o   internally streamlined use of multiple cpu (no unnecessary export)
+    o   select.stats() failed with parameter not 'D'
+    o   run.scenarios() uses message instead of cat
+    
+Changes in version 2.3.1 (2015-05-14)
+
+New features or changed behaviour of old functions
+    o   scenariosFromStatistics() new function to generate scenarios with specified
+         number of first captures and recaptures.
+    o   improved output header for fit.args etc.
+
+
 Changes in version 2.3.0 (2015-03-25)
 
 New features or changed behaviour of old functions

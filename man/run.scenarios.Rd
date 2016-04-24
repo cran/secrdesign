@@ -39,10 +39,10 @@ shortcut.
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, det.args, fit = FALSE, fit.args, extractfn = NULL, 
+    pop.args, det.args, fit = FALSE, fit.args, chatnsim, extractfn = NULL, 
     multisession = FALSE, ncores = 1, seed = 123, ...)
 
-fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
+fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
     ncores = 1, scen, repl, ...)
 }
 
@@ -61,8 +61,8 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   \code{\link[secr]{sim.capthist}} (optional)} 
   \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
   data are generated but no model is fitted}
-  \item{fit.args}{list of named arguments to
-  \code{\link[secr]{secr.fit}} (optional)}
+  \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} (optional)}
+  \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
   \item{ncores}{integer number of cores for parallel processing}
@@ -114,6 +114,8 @@ fit.models(rawdata, fit = FALSE, fit.args, extractfn = NULL,
   and/or \code{\link{select.stats}} before summarization.
   
   In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to select a subset of datasets for model fitting.
+  
+  \code{chatnsim} controls an additional quasi-likelihood model step to adjust for overdispersion of sighting counts. No adjustment happens when \code{chatnsim = 0}; otherwise \code{abs(chatnsim)} gives the number of simulations to perform to estimate overdispersion. If \code{chatnsim < 0} then the quasilikelihood is used only to re-estimate the variance at the previous MLE (method = "none").
 
 }
 

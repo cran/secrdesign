@@ -1,7 +1,13 @@
 importFrom (abind, abind)
+importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
+           "plot", "points", "segments")
+importFrom("stats", "coef", "logLik", "predict", "qnorm", "quantile",
+           "terms", "uniroot")
+importFrom("utils", "flush.console", "packageDescription")
 import (parallel)
 import (secr)
 export (make.scenarios)
+export (scenariosFromStatistics)
 export (run.scenarios)
 export (fit.models)
 export (select.stats)

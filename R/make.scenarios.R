@@ -6,6 +6,11 @@
 ## 2014-02-19 popindex and popargs replace Ndist; FIXED 'CROSSING'
 ## 2014-04-27 detindex
 ## 2014-11-25 groups
+
+## 2016-03-06 suggest  noccasions nrepeats D lambda0 sigma detectfn recapfactor
+##            should be from 
+##                pop.args (D) and 
+##                det.args (noccasions nrepeats lambda0 sigma detectfn recapfactor)
 ###############################################################################
 
 ## construct a dataframe in which each row represents a scenario

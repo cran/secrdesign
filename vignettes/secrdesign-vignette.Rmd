@@ -13,7 +13,7 @@ vignette: >
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE}
 library(secrdesign)
-## setwd('d:/density secr 2.9/secrdesign/vignettes')
+## setwd('d:/density secr 2.10/secrdesign/vignettes')
 load('runsims1.RData')
 load('runsims2.RData')
 options(width = 85)
@@ -330,7 +330,7 @@ When `fit = FALSE`, the default output from each replicate is a vector
 of 4 summary statistics:
 
 * n - number of different individuals
-* ndet - total number of detections (`captures' and `recaptures')
+* ndet - total number of detections ('captures' and 'recaptures')
 * nmov - total number of detections at a detector other than the
   one where an animal was last detected
 * dpa - detectors per animal (average number of detectors at which
@@ -641,7 +641,7 @@ summarises the statistic across replicates, potentially resulting in a
 table with this structure:
 
 ```{r,echo=FALSE, comment=''}
-bullet <-  rawToChar(as.raw(149))
+bullet <-  '*' ## rawToChar(as.raw(149))
 tmp <- matrix(bullet, nr=8, ncol=12)
 dimnames(tmp) <- list(Statistics = c("estimate","SE.estimate","lcl","ucl","RB","RSE","ERR","COV"),
 Fields = c("n","mean","se","sd","min","max","lcl","ucl","rms","median","q025","q975"))
@@ -679,7 +679,7 @@ plot(stats1, type = "hist", statistic = "estimate")
 plot(stats1, type = "CI")
 ```
 ```{r, echo=FALSE, eval=FALSE}
-png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig3.png',
+png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig3.png',
     width = 850, height = 800)
 par(mfrow = c(2,2), cex=1.2)
 plot(stats1, type = "hist", statistic = "estimate")
@@ -990,7 +990,7 @@ plot(sims4, statistic = "n", breaks = seq(0,80,5))      ## animals
 plot(sims4, statistic = "nmov", breaks = seq(0,140,5))  ## movements
 ```
 ```{r, eval=FALSE, echo=FALSE}
-png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig4.png',
+png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig4.png',
     width = 850, height = 800)
 par(mfrow = c(4,3), cex=1)
 plot(sims4, statistic = "n", breaks = seq(0,80,5))  ## number of animals
@@ -1038,7 +1038,7 @@ text(c(1.5,3.5,5.5), rep(0.38,3), paste("recapfactor", c(0.5,1,2), sep = " = "))
 
 ```{r, eval = FALSE, echo=FALSE}
 ## plot
-png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig5.png',
+png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig5.png',
     width = 850, height = 500)
 par(mar = c(4,4,1,1), cex = 1.4)
 plot(c(0.5,6.5), c(-0.2,0.4), type = "n", xlab = "Scenario", ylab = "RB(D-hat)")
@@ -1136,7 +1136,7 @@ spotHeight(possummask, prefix = "D2")
 ```{r, eval = FALSE}
 pop1 <- attr(sims6a$output[[1]][[1]], "popn")
 pop2 <- attr(sims6a$output[[2]][[1]], "popn")
-png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig6.png',
+png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig6.png',
     width=850, height=400)
 par(mfrow = c(1,2), mar=c(1,1,1,6), cex=1.25)
 plot(possummask, covariate = "D1", dots = FALSE, breaks = 0:6)
@@ -1245,11 +1245,11 @@ summary(select.stats(sims8,'pmix'))$OUTPUT
 
 ```{r, eval = FALSE, echo = FALSE}
 save(sims1, sims2, 
-     file = 'd:/density secr 2.9/secrdesign/vignettes/runsims1.RData')
+     file = 'd:/density secr 2.10/secrdesign/vignettes/runsims1.RData')
 ```
 ```{r, eval = FALSE, echo = FALSE}
 save(raw3, sims3, sims4, sims5, sims6, sims6a, sims7, raw8, sims8,
-     file = 'd:/density secr 2.9/secrdesign/vignettes/runsims2.RData')
+     file = 'd:/density secr 2.10/secrdesign/vignettes/runsims2.RData')
 ```
 [fig1]:secrdesign-fig1.png
 [fig2]:secrdesign-fig2.png

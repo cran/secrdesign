@@ -1,39 +1,39 @@
-## ----, eval = TRUE, echo=FALSE, message=FALSE--------------------------------------
+## ---- eval = TRUE, echo=FALSE, message=FALSE---------------------------------------
 library(secrdesign)
-## setwd('d:/density secr 2.9/secrdesign/vignettes')
+## setwd('d:/density secr 2.10/secrdesign/vignettes')
 load('runsims1.RData')
 load('runsims2.RData')
 options(width = 85)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  library(secrdesign)
 #  scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 #  traps1 <- make.grid()
 #  sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
 #       scen1, seed = 345, fit = TRUE)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(sims1)$OUTPUT
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 library(secrdesign)
 mydetectors <- list(grid6x6 = make.grid(6,6),
                     grid8x9 = make.grid(8,9),
                     grid12x12 = make.grid(12,12))
 
-## ----,eval=FALSE-------------------------------------------------------------------
+## ----eval=FALSE--------------------------------------------------------------------
 #  make.scenarios (trapsindex = 1, noccasions = 3, nrepeats = 1, D, g0,
 #      sigma, lambda0, detectfn = 0, recapfactor = 1, popindex = 1,
 #      detindex = 1, fitindex = 1, groups, crosstraps = TRUE)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 make.scenarios (trapsindex = 1:3, noccasions = 4, D = 5, g0 = 0.2, sigma = c(20,30))
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 make.scenarios (trapsindex = 1:3, noccasions = c(8,4,2), D = 5, g0 = 0.2,
                 sigma = c(20,30), crosstraps = FALSE)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  run.scenarios (nrepl, scenarios, trapset, maskset, xsigma = 4,
 #      nx = 32, pop.args, det.args, fit = FALSE, fit.args, extractfn =
 #      NULL, multisession = FALSE, ncores = 1, seed = 123)
@@ -75,11 +75,11 @@ extractfn <- function(x) {
         data.frame()   
 }
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  closedNsim <- run.scenarios (nrepl = 10, scenarios = scen1, trapset = traps1,
 #       extractfn = closedN, estimator = c("null", "chao", "chaomod"))
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  sum1 <- function(out) {
 #      require(abind)
 #      ## collapse replicates to an array, omitting non-numeric column
@@ -91,26 +91,26 @@ extractfn <- function(x) {
 #      }
 #  lapply(closedNsim$output, sum1)
 
-## ----, eval=FALSE------------------------------------------------------------------
+## ---- eval=FALSE-------------------------------------------------------------------
 #  select.stats(object, parameter = "D", statistics)
 
-## ----, eval=FALSE------------------------------------------------------------------
+## ---- eval=FALSE-------------------------------------------------------------------
 #  find.param(object)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 stats1 <- select.stats(sims1, parameter = "D", statistics = c("estimate",
    "lcl", "ucl", "RB", "RSE", "COV"))
 lapply(stats1$output, head, 4)
 
-## ----,eval=FALSE-------------------------------------------------------------------
+## ----eval=FALSE--------------------------------------------------------------------
 #  x <- validate (x, test, validrange = c(0, Inf), targets = test)
 
-## ----,eval=FALSE-------------------------------------------------------------------
+## ----eval=FALSE--------------------------------------------------------------------
 #  summary (object, dec = 5, fields = c("n", "mean", "se"), alpha = 0.05,
 #      type = c("list", "dataframe", "array"), ...)
 
-## ----,echo=FALSE, comment=''-------------------------------------------------------
-bullet <-  rawToChar(as.raw(149))
+## ----echo=FALSE, comment=''--------------------------------------------------------
+bullet <-  '*' ## rawToChar(as.raw(149))
 tmp <- matrix(bullet, nr=8, ncol=12)
 dimnames(tmp) <- list(Statistics = c("estimate","SE.estimate","lcl","ucl","RB","RSE","ERR","COV"),
 Fields = c("n","mean","se","sd","min","max","lcl","ucl","rms","median","q025","q975"))
@@ -119,30 +119,30 @@ tmp[3:5,7:8] <- ""
 tmp[8,7:12] <- ""
 print(tmp, qu=F)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(stats1, c('n', 'mean', 'se', 'median'))
 
-## ----, eval=FALSE------------------------------------------------------------------
+## ---- eval=FALSE-------------------------------------------------------------------
 #  par(mfrow = c(2,2))
 #  plot(stats1, type = "hist", statistic = "estimate")
 #  plot(stats1, type = "CI")
 
-## ----, echo=FALSE, eval=FALSE------------------------------------------------------
-#  png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig3.png',
+## ---- echo=FALSE, eval=FALSE-------------------------------------------------------
+#  png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig3.png',
 #      width = 850, height = 800)
 #  par(mfrow = c(2,2), cex=1.2)
 #  plot(stats1, type = "hist", statistic = "estimate")
 #  plot(stats1, type = "CI")
 #  dev.off()
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  sims2 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios = scen1,
 #      fit = TRUE, fit.args = list(method = "none"))
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(sims2)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  scen3 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 #  traps3 <- make.grid()
 #  raw3 <- run.scenarios(nrepl = 50, trapset = traps3, scenarios =
@@ -153,7 +153,7 @@ summary(sims2)
 #      list(model = g0~T)), fit = TRUE, ncores = 4)
 #  summary(sims3)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  traps4 <- list(grid6x6 = make.grid(6,6),
 #                 grid8x9 = make.grid(8,9),
 #                 grid12x12 = make.grid(12,12))
@@ -163,25 +163,25 @@ summary(sims2)
 #  sims4 <- run.scenarios(nrepl = 500, trapset = traps4, scenarios =
 #       scen4, fit = FALSE, ncores = 3)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 class(sims4)        ## just peeking
 find.stats(sims4)   ## just peeking
 summary(sims4)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  par(mfrow=c(4,3))
 #  plot(sims4, statistic = "n", breaks = seq(0,80,5))      ## animals
 #  plot(sims4, statistic = "nmov", breaks = seq(0,140,5))  ## movements
 
-## ----, eval=FALSE, echo=FALSE------------------------------------------------------
-#  png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig4.png',
+## ---- eval=FALSE, echo=FALSE-------------------------------------------------------
+#  png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig4.png',
 #      width = 850, height = 800)
 #  par(mfrow = c(4,3), cex=1)
 #  plot(sims4, statistic = "n", breaks = seq(0,80,5))  ## number of animals
 #  plot(sims4, statistic = "nmov", breaks = seq(0,140,5))
 #  dev.off()
 
-## ----,eval = FALSE-----------------------------------------------------------------
+## ----eval = FALSE------------------------------------------------------------------
 #  ## set up and run simulations
 #  traps5 <- list(grid6x6 = make.grid(6,6),
 #                 grid10x10 = make.grid(10,10))
@@ -191,14 +191,14 @@ summary(sims4)
 #      scen5, fit = TRUE, fit.args = list(list(model = g0 ~ 1),
 #      list(model = g0 ~ b)), ncores = 6)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 ## select statistics and throw out any replicates with SE > 100
 ## (there is one -- see reduced n in output for scenario 11)
 stats5 <- select.stats(sims5)
 stats5 <- validate(stats5, "SE.estimate", c(0,100), "all")
 sum5 <- summary(stats5, fields = c("n","mean","se","lcl","ucl", "median"))
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  ## plot
 #  plot(c(0.5,6.5), c(-0.2,0.4), type = "n", xlab = "Scenario", ylab = "RB(D-hat)")
 #  for (i in 1:12) {
@@ -210,9 +210,9 @@ sum5 <- summary(stats5, fields = c("n","mean","se","lcl","ucl", "median"))
 #  abline(h = 0, col="red")
 #  text(c(1.5,3.5,5.5), rep(0.38,3), paste("recapfactor", c(0.5,1,2), sep = " = "))
 
-## ----, eval = FALSE, echo=FALSE----------------------------------------------------
+## ---- eval = FALSE, echo=FALSE-----------------------------------------------------
 #  ## plot
-#  png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig5.png',
+#  png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig5.png',
 #      width = 850, height = 500)
 #  par(mar = c(4,4,1,1), cex = 1.4)
 #  plot(c(0.5,6.5), c(-0.2,0.4), type = "n", xlab = "Scenario", ylab = "RB(D-hat)")
@@ -226,11 +226,11 @@ sum5 <- summary(stats5, fields = c("n","mean","se","lcl","ucl", "median"))
 #  text(c(1.5,3.5,5.5), rep(0.38,3), paste("recapfactor", c(0.5,1,2), sep = " = "))
 #  dev.off()
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 ## look at extended output
 sum5
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  
 #  ## add covariates to builtin secr object possummask
 #  ## D1 is homogeneous density
@@ -262,15 +262,15 @@ sum5
 #  sims6 <- run.scenarios (500, scen6, traps(possumCH), possummask,
 #      pop.args = poplist)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(sims6)
 
-## ----,eval = FALSE-----------------------------------------------------------------
+## ----eval = FALSE------------------------------------------------------------------
 #  sims6a <- run.scenarios (1, scen6, traps(possumCH), possummask,
 #      pop.args = poplist, det.args = list(savepopn = TRUE),
 #      extractfn = identity)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  ## sims6a$output is now a list (one component per scenario) of lists
 #  ## (one component per replicate) of simulated capthist objects, each
 #  ## with its 'popn' object embedded as an attribute
@@ -285,14 +285,14 @@ summary(sims6)
 #  plot(traps(possumCH), detpar = list(col = 'green', pch = 15), add = TRUE)
 #  plot(pop2, frame = FALSE, add = TRUE, col = "blue", pch = 16, cex = 0.6)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  ## click on map to display height; Esc to exit
 #  spotHeight(possummask, prefix = "D2")
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  pop1 <- attr(sims6a$output[[1]][[1]], "popn")
 #  pop2 <- attr(sims6a$output[[2]][[1]], "popn")
-#  png(file='d:/density secr 2.9/secrdesign/vignettes/secrdesign-fig6.png',
+#  png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig6.png',
 #      width=850, height=400)
 #  par(mfrow = c(1,2), mar=c(1,1,1,6), cex=1.25)
 #  plot(possummask, covariate = "D1", dots = FALSE, breaks = 0:6)
@@ -303,7 +303,7 @@ summary(sims6)
 #  plot(pop2, frame = FALSE, add = TRUE, col = "blue", pch = 16, cex = 0.6)
 #  dev.off()
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  
 #  library(secrlinear)
 #  library(secrdesign)
@@ -336,10 +336,10 @@ summary(sims6)
 #      maskset = linmask, det.args = list(det.arg),
 #      scenarios = scen7, seed = 345, fit = FALSE)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(sims7)
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 scen8 <- make.scenarios (D = 8, g0 = 0.3, sigma = 30, noccasions = c(4,8), groups = c('F','M'))
 male <- scen8$group == 'M'
 scen8$D[male] <- 4
@@ -347,7 +347,7 @@ scen8$g0[male] <- 0.2
 scen8$sigma[male] <- 40
 scen8[,1:8]
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 grid <- make.grid(8, 8, spacing = 30)
 mask <- make.mask(grid, buffer = 160, type = 'trapbuffer')
 ## extracts total density and proportion from output for the first group (F)
@@ -359,24 +359,24 @@ exfn <- function(x) {
     else data.frame()
 }
 
-## ----, eval = 2--------------------------------------------------------------------
+## ---- eval = 2---------------------------------------------------------------------
 raw8 <- run.scenarios(20, scen8, trapset = list(grid), fit = FALSE, maskset = list(mask))
 summary(raw8)
 
-## ----, eval = FALSE----------------------------------------------------------------
+## ---- eval = FALSE-----------------------------------------------------------------
 #  sims8 <- run.scenarios(20, scen8, trapset = list(grid), fit = TRUE, extractfn = exfn,
 #                         fit.args = list(model = list(g0~h2, sigma~h2), hcov = 'group'),
 #                         maskset = list(mask))
 
-## ----, eval = TRUE-----------------------------------------------------------------
+## ---- eval = TRUE------------------------------------------------------------------
 summary(select.stats(sims8,'D'))$OUTPUT
 summary(select.stats(sims8,'pmix'))$OUTPUT
 
-## ----, eval = FALSE, echo = FALSE--------------------------------------------------
+## ---- eval = FALSE, echo = FALSE---------------------------------------------------
 #  save(sims1, sims2,
-#       file = 'd:/density secr 2.9/secrdesign/vignettes/runsims1.RData')
+#       file = 'd:/density secr 2.10/secrdesign/vignettes/runsims1.RData')
 
-## ----, eval = FALSE, echo = FALSE--------------------------------------------------
+## ---- eval = FALSE, echo = FALSE---------------------------------------------------
 #  save(raw3, sims3, sims4, sims5, sims6, sims6a, sims7, raw8, sims8,
-#       file = 'd:/density secr 2.9/secrdesign/vignettes/runsims2.RData')
+#       file = 'd:/density secr 2.10/secrdesign/vignettes/runsims2.RData')
 
