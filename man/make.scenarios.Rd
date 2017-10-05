@@ -107,7 +107,7 @@ crosstraps = TRUE)
 
 \seealso{
   
-  \code{\link{run.scenarios}}, \code{\link[secr]{sim.capthist}}
+  \code{\link{run.scenarios}}, \code{\link{scenarioSummary}}, \code{\link[secr]{sim.capthist}}
   
 }
 

@@ -66,7 +66,7 @@ done either in \code{run.scenarios} or in \code{regionN.SL}.
 
 \examples{
 ## using nrepl = 2 just for checking
-scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
+scen1 <- make.scenarios(D = c(3,6), sigma = 25, g0 = 0.2)
 traps1 <- make.grid()  ## default 6 x 6 grid of multi-catch traps
 tmp1 <- run.scenarios(nrepl = 2, trapset = traps1, scenarios = scen1,
     fit = TRUE, extractfn = trim)

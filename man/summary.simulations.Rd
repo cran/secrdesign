@@ -54,8 +54,6 @@ header(object)
 
 \details{
 
-    If \code{object} inherits from `selectedstatistics' then the numeric
-
   If \code{object} inherits from `selectedstatistics' then the numeric
   results from replicate simulations are summarized using the chosen
   `fields' (by default, the number of non-missing values, mean and standard

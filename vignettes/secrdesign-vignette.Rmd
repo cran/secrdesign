@@ -25,8 +25,7 @@ The R package **secrdesign** is a set of tools to assist the
 design of studies using spatially explicit capture--recapture
 (SECR). It provides convenient wrappers for simulation and model
 fitting functions in package **secr** to emulate many features of
-the 'Simulator' module of Density 5.0 (Efford 2012). Other tools may
-be added in future.
+the 'Simulator' module of Density 5.0 (Efford 2012). 
 
 This document is a technical guide to **secrdesign**. It assumes
 an understanding of estimator properties such as bias, precision, and
@@ -63,24 +62,25 @@ United States. Accuracy combines both systematic error (bias) and
 precision: one measure is the square root of the mean squared
 difference between the true value and the estimate (RMSE).
 
-Once you have sorted out (i)--(iv) you can proceed to use Monte Carlo
-simulation in **secrdesign** to evaluate how alternative sampling
-scenarios perform with respect to your chosen criterion.
+Once you have sorted out (i)--(iv) you are ready to define and compare sampling scenarios. Scenarios are specified in a dataframe that is usually constructed with `make.scenarios` (see [The scenarios dataframe](#the-scenarios-dataframe)). Each scenario has an integer 'trapsindex' code that identifies a particular detector array; a list of detector arrays is constructed separately, possibly using functions such as `make.grid`.
+
+Scenarios may be investigated in two ways --
+
+* tabulation of expected counts etc. with `scenarioSummary`
+
+* Monte Carlo simulation with `run.scenarios`.
+
+Monte Carlo simulation is ultimately the more reliable and comprehensive route, but it is much slower.
+
 
 \vspace{10pt}
 
 Fig. 1 shows the sequence of steps taken in
 **secrdesign** to conduct simulations and summarise the
 results. Each step is described in detail in a later
-section. Simulations are specified by 'scenarios' stored in a
-dataframe. The scenario dataframe will usually be constructed with
-`make.scenarios`. You may construct it manually, but there is
-a rigid list of required columns (see [The scenarios dataframe](#the-scenarios-dataframe)).
-
-Typically, you will (i) construct detector array(s), (ii) construct a
-dataframe of scenarios, (iii) use `run.scenarios()` to generate
-data and fit SECR models, (iv) select some statistics with
-`select.stats()`, and (v) summarise and plot the results.
+section. Typically, you will use `run.scenarios()` to generate
+data and fit SECR models, select some statistics with
+`select.stats()`, and summarise and plot the results.
 
 \setkeys{Gin}{height=125mm, keepaspectratio=true, trim = 0mm 0mm 0mm 10mm, clip=true} 
 ![fig1][fig1]  
@@ -97,24 +97,32 @@ data and fit SECR models, (iv) select some statistics with
 For an introductory example we construct a simple set of
 scenarios and perform some simulations. The trap layout is a default 6
 x 6 grid of multi-catch traps at 20-m spacing. Density takes one of
-two levels (5/ha or 10/ha) and detection parameters sigma and g0 are
+two levels (5/ha or 10/ha) and detection parameters sigma and lambda0 are
 fixed.
 
-```{r, eval = FALSE}
+```{r simpex, cache = TRUE, eval = TRUE}
 library(secrdesign)
 scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
-traps1 <- make.grid()
-sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
-     scen1, seed = 345, fit = TRUE)
+traps1 <- make.grid(8, 8, spacing = 25)
+scenarioSummary(scen1, traps1) 
 ```
-The output is an object of class `c( "estimatetables", "secrdesign", "list")`.
+
+The initial summary includes the expected number of individuals (En) and recaptures (Er), and an approximate rule-of-thumb relative standard error for estimated density (rotRSE). See `?scenarioSummary` and [secrdesign-tools.pdf] for further details.
+
+```{r simpex2, cache = TRUE}
+sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
+     scen1, seed = 345, fit = TRUE, fit.args = list(detectfn = 'HHN'))
+```
+The simulation output is an object of class `c( "estimatetables", "secrdesign", "list")`.
 We use the summary method for estimatetables
 to view results, and here display only the summary output (omitting a
 header that describes the simulations).
 
-```{r, eval = TRUE}
+```{r simpex3, eval = TRUE}
 summary(sims1)$OUTPUT
 ```
+
+In this example there is close agreement between the fast rule-of-thumb RSE and the simulation results.
 
 Later sections show how to customize the summary and plot results.
 
@@ -1269,3 +1277,5 @@ output from each replicate is probably already in the form of selected
 statistics (the default raw data summaries 'n', 'ndet','nmov' and
 'dpa') and `select.stats()` is not relevant. The same may also apply
 with a user-provided `extractfn` when `fit = TRUE`.
+
+[secrdesign-tools.pdf]: http://www.otago.ac.nz/density/pdfs/secrdesign-tools.pdf

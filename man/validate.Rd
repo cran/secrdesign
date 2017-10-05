@@ -17,7 +17,7 @@ out-of-range.
 }
 
 \usage{
-validate(x, test, validrange = c(0, Inf), targets = test)
+validate(x, test, validrange = c(0, Inf), targets = test, quietly = FALSE)
 }
 
 \arguments{
@@ -27,6 +27,7 @@ validate(x, test, validrange = c(0, Inf), targets = test)
   permitted values of `test', or a matrix (see details)}
   \item{targets}{character vector with names of one or more statistics
   to set to missing (NA) when test is out-of-range}
+  \item{quietly}{logical; if TRUE messages are suppressed}
 }
 
 \details{

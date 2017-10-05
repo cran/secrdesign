@@ -5,6 +5,8 @@
 ## 2014-04-09, 2014--04-11, 2014-04-29
 ## 2014-11-25 select.stats moved to own file
 ## 2015-11-26 collapsesubarg for header()
+## 2016-09-23 fixed bug in summary.selectedstatistics when type = 'array'
+## 2016-09-28 detectpar may be specified in det.args
 ###############################################################################
 
 make.array <- function (object) {
@@ -19,11 +21,12 @@ make.array <- function (object) {
     nrepl <- nrow(object$output[[1]])
     if (length(varying)>0) {
         outputarray <- array (dim = c(nrepl, nstat, vdims), dimnames =
-                              c(list(1:nrepl), list(statistics), inputs[varying]))
+                              c(list(1:nrepl), list(statistic = statistics), 
+                                inputs[varying]))
     }
     else {
         outputarray <- array (dim = c(nrepl, nstat), dimnames =
-                              list(NULL, statistics))
+                              list(NULL, statistic = statistics))
     }
     outputarray[] <- unlist(object$output)
     outputarray
@@ -112,6 +115,7 @@ argdf <- function (args) {
         tmp <- lapply(tmp, collapsemodel)
         tmp <- lapply(tmp, collapsesubarg, 'details')
         tmp <- lapply(tmp, collapsesubarg, 'start')
+        tmp <- lapply(tmp, collapsesubarg, 'detectpar') ## 2016-09-28
         tmp <- lapply(tmp, function(x) sapply(x, format))
         nm <- unique(unlist(lapply(tmp, names)))
         tmp0 <- matrix('', nrow = length(tmp), ncol = length(nm),
@@ -124,16 +128,20 @@ argdf <- function (args) {
             if (length(x$core)>1)
                 x$core <- 'core'
             x})
-        for (i in 1:length(tmp)) 
+        for (i in 1:length(tmp)) {
             # tmp0[i,names(tmp[[i]])] <- tmp[[i]]
-            tmp0[i,names(tmp[[i]])] <- unlist(tmp[[i]])
+            ## tmp0[i,names(tmp[[i]])] <- unlist(tmp[[i]])
+            ## adhoc 2017-05-26
+            for (j in 1: length(tmp[[i]]))
+                tmp0[i,names(tmp[[i]])[j]] <- unlist(tmp[[i]][j])[1]
+        }
         ## as.data.frame(t(unlist(tmp0)))  ## but this fails! 2015-11-03
         as.data.frame(tmp0)
     }
 }
 
 header <- function (object) {
-
+    
     values <- lapply(object$scenarios, unique)
     nvalues <- sapply(values, length)
     notID <- names(object$scenarios) != 'scenario'
@@ -141,7 +149,8 @@ header <- function (object) {
     rownames(constant) <- 'value'
     constant <- data.frame(t(constant))
     constant[,1] <- as.character(constant[,1])
-    varying <- object$scenarios[, nvalues>1, drop = FALSE]
+    varying <- object$scenarios[, nvalues>1, drop = FALSE] 
+    if (ncol(varying)==0) varying <- NULL  ## 2017-05-26
 
     ti <- unique(object$scenarios$trapsindex)
     detectors <- data.frame(trapsindex = ti, trapsname = names(object$trapset)[ti])
@@ -205,7 +214,7 @@ summary.selectedstatistics <- function (object,
     q3tag <- paste('q', formatC(1000*alpha3, width=3, format="d", flag = "0"), sep='')
 
     type <- match.arg(type)
-
+    
     ## allow for zero-length
     minNA <- function (x) if (sum(!is.na(x)) > 0) min(x, na.rm = T) else NA
     maxNA <- function (x) if (sum(!is.na(x)) > 0) max(x, na.rm = T) else NA
@@ -262,8 +271,11 @@ summary.selectedstatistics <- function (object,
             new <- do.call(rbind, lapply(tmp, valstring))
             tmp <- cbind(object$scenarios[,varying], new)
         }
-    
+
         out <- list(header = header(object), OUTPUT = tmp)
+        # 2016-09-23 moved inside this block
+        names(out$OUTPUT) <- as.character(unique(object$scenarios$scenario))
+        
     }
     ## array output
     else {
@@ -308,7 +320,6 @@ summary.selectedstatistics <- function (object,
     }
     ## wrap at 'group'
     out$scenariodetail <- unlist(degroup(names(out$OUTPUT)))
-    names(out$OUTPUT) <- as.character(unique(object$scenarios$scenario))
     class (out) <- c('summarysecrdesign', 'list')
     out
 }

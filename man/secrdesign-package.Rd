@@ -14,8 +14,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.4.0\cr
-Date: \tab 2016-04-23\cr
+Version: \tab 2.5.0\cr
+Date: \tab 2017-10-06\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -24,10 +24,9 @@ simulation the precision or bias of density estimates from different
 detector layouts, given pilot values for density and the detection
 parameters lambda0/g0 and sigma.
 
-The important functions in \pkg{secrdesign} are:
+The simulation functions in \pkg{secrdesign} are:
 \tabular{ll}{
   \code{\link{make.scenarios}} \tab generate dataframe of parameter values etc. \cr
-  \code{\link{scenariosFromStatistics}} \tab match specified n, r \cr
   \code{\link{run.scenarios}} \tab perform simulations, with or without model fitting \cr
   \code{\link{fit.models}} \tab fit SECR model(s) to rawdata output from \code{run.scenarios} \cr
   \code{\link{predict.fittedmodels}} \tab infer `real' parameter
@@ -39,10 +38,21 @@ The important functions in \pkg{secrdesign} are:
   each scenario \cr 
 }
 
-Documentation is provided in a vignette
-\url{../doc/secrdesign-vignette.pdf}; an Appendix has code for various
-examples that should help get you started. The help pages are also
-available as \url{../doc/secrdesign-manual.pdf}.
+Documentation for simulation functions is provided in a vignette \url{../doc/secrdesign-vignette.pdf}. An Appendix has code for various examples that should help get you started. 
+
+Other functions not used exclusively for simulation are:
+\tabular{ll}{
+  \code{\link{Enrm}} \tab expected numbers of individuals \eqn{n}, re-detections \eqn{r} and movements \eqn{m} \cr
+  \code{\link{minnrRSE}} \tab approximate RSE(D-hat) given sample size (\eqn{n}, \eqn{r}) \cr
+  \code{\link{costing}} \tab compute various cost components \cr
+  \code{\link{scenarioSummary}} \tab applies \code{Enrm}, \code{minnrRSE}, and other summaries to each scenario in a dataframe \cr
+  \code{\link{optimalSpacing}} \tab optimal detector spacing by rule-of-thumb and simulation RSE(D-hat)\cr
+  \code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr
+}
+
+Documentation for expected counts is in \url{../doc/secrdesign-Enrm.pdf}. Another vignette \url{../doc/secrdesign-tools.pdf} demonstrates other tools. These include the \code{optimalSpacing} function, for finding the detector spacing that yields the greatest precision for a given detector geometry, number of sampling occasions, density and detection parameters.
+
+Help pages are also available as \url{../doc/secrdesign-manual.pdf}.
 
 }
 

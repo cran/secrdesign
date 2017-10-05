@@ -1,3 +1,36 @@
+Changes in version 2.5.0 (2017-10-06)
+
+New features or changed behaviour of old functions
+    o   functions Lambda(), Enrm(), minnrRSE(), costing(), getdetectpar() and optimalSpacing()
+    o   new function scenarioSummary() reports deterministic summary of scenarios (e.g., expected number 
+        of individuals, costings)
+    o   run.scenarios() and fit.models() acquire argument byscenario (parallel scenarios or replicates?)
+    o   fit.models() mask may be passed as component of fit.args, when it has priority over maskset
+    o   run.scenarios() user may specify different masks as core in pop.args
+    
+Bugs fixed
+    o   run.scenarios() ignored Nmark detection argument
+    o   chatnsim lost if multiple scenarios
+    o   nrepeats was ignored when method = 'none'
+
+Other
+    o   more robust outputtype when no results
+    o   packageType message if pre-release
+    o   persistent problems in header() for non-scalar arguments
+
+Changes in version 2.4.1 (2016-09-28)
+
+New features or changed behaviour of old functions
+    o   rule-of-thumb RSE added to default extractfn when fit = F
+    o   validate() acquires argument 'quietly'
+    o   detectpar list may be specified in det.args (overrides scenario)
+
+Bugs fixed
+    o   summary.selectedstatistics() failed when type = 'array'
+
+Other
+    o   all array dimensions now named in output of summary.selectedstatistics()
+
 Changes in version 2.4.0 (2016-04-23)
 
 New features or changed behaviour of old functions

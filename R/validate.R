@@ -1,9 +1,10 @@
-## 2014-04-17, 27, 2014-10-30, 2015-11-26
-validate <- function (x, test, validrange = c(0, Inf), targets = test) {
+## 2014-04-17, 27, 2014-10-30, 2015-11-26, 2016-05-30
+validate <- function (x, test, validrange = c(0, Inf), targets = test, quietly = FALSE) {
     onescenario <- function (scen, minx, maxx, scennum) {
         criterion <- (scen[,test] < minx) | (scen[,test] > maxx)
         criterion[is.na(criterion)] <- TRUE     ## 2014-10-30
-        cat('Dropping ', sum(criterion) , 'value(s) for scenario ', scennum, '\n')
+        if (!quietly)
+            message('Dropping ', sum(criterion) , 'value(s) for scenario ', scennum)
         scen[criterion,targets] <- NA
         scen[is.na(scen[,test]),targets] <- NA
         scen

@@ -43,8 +43,12 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
         SEname <- 'SE.beta'
     }
     #}
-    
-    typical <- object$output[[1]][[1]]  ## first scenario, first replicate
+    for (i in 1:length(object$output)) {
+        typical <- object$output[[i]][[1]]  ## ith scenario, first replicate
+        if (length(typical) > 0) break
+    }
+    if (length(typical) == 0) stop ("no results found")
+   
     stat0 <- names(typical)[sapply(typical, is.numeric)]
     if (missing(statistics)) {
         stat1 <- stat0

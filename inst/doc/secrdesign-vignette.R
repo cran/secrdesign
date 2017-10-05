@@ -5,14 +5,7 @@ load('runsims1.RData')
 load('runsims2.RData')
 options(width = 85)
 
-## ---- eval = FALSE-----------------------------------------------------------------
-#  library(secrdesign)
-#  scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
-#  traps1 <- make.grid()
-#  sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
-#       scen1, seed = 345, fit = TRUE)
-
-## ---- eval = TRUE------------------------------------------------------------------
+## ----simpex3, eval = TRUE----------------------------------------------------------
 summary(sims1)$OUTPUT
 
 ## ---- eval = TRUE------------------------------------------------------------------

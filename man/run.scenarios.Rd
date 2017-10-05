@@ -19,10 +19,10 @@ may comprise an actual field design input with \code{\link{read.traps}} or
 Examples. Even a single layout must be presented as a component of a
 list (e.g., \code{list(make.grid())}).
 
-If \code{ncores} > 1 then each scenario will be run in a separate worker
-process using \code{parLapply} from \pkg{parallel} (see also
-\link[secr]{Parallel}). Setting \code{ncores} greater than the number of
-scenarios causes an error.
+If \code{ncores} > 1 then by default each scenario will be run in a separate worker
+process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}).
+
+If \code{byscenario = FALSE} then replicates are split among cores (the default is to split scenarios among cores), which is useful if you have more cores than scenarios. Dividing replicates among cores (\code{byscenario = FALSE}) also largely avoids the inefficiency that results when some workers finish much sooner than others (load balancing is not an option in \code{run.scenarios}). Setting \code{ncores} greater than the number of scenarios causes an error when \code{byscenario = TRUE}.
 
 Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
@@ -40,10 +40,10 @@ shortcut.
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     pop.args, det.args, fit = FALSE, fit.args, chatnsim, extractfn = NULL, 
-    multisession = FALSE, ncores = 1, seed = 123, ...)
+    multisession = FALSE, ncores = 1, byscenario = TRUE, seed = 123, ...)
 
 fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
-    ncores = 1, scen, repl, ...)
+    ncores = 1, byscenario = TRUE, scen, repl, ...)
 }
 
 \arguments{
@@ -66,6 +66,7 @@ fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
   \item{ncores}{integer number of cores for parallel processing}
+  \item{byscenario}{logical; if TRUE and ncores>1 then scenarios are sent to different cores}
   \item{seed}{integer pseudorandom number seed}
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
@@ -179,6 +180,7 @@ Murray Efford
 
 \seealso{
   \code{\link{predict.fittedmodels}},
+  \code{\link{scenarioSummary}}, 
   \code{\link{select.stats}},
   \code{\link{summary.secrdesign}},
   \code{\link{summary.selectedstatistics}},
