@@ -1,6 +1,5 @@
 ## ---- eval = TRUE, echo=FALSE, message=FALSE---------------------------------------
-library(secrdesign)
-## setwd('d:/density secr 2.10/secrdesign/vignettes')
+## setwd('d:/density secr 3.1/secrdesign/vignettes')
 load('runsims1.RData')
 load('runsims2.RData')
 options(width = 85)
@@ -297,9 +296,7 @@ summary(sims6)
 #  dev.off()
 
 ## ---- eval = FALSE-----------------------------------------------------------------
-#  
 #  library(secrlinear)
-#  library(secrdesign)
 #  
 #  ## create a habitat geometry
 #  x <- seq(0, 4*pi, length = 200)

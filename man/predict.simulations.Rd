@@ -65,14 +65,17 @@ done either in \code{run.scenarios} or in \code{regionN.SL}.
 }
 
 \examples{
-## using nrepl = 2 just for checking
+
+\dontrun{
 scen1 <- make.scenarios(D = c(3,6), sigma = 25, g0 = 0.2)
 traps1 <- make.grid()  ## default 6 x 6 grid of multi-catch traps
-tmp1 <- run.scenarios(nrepl = 2, trapset = traps1, scenarios = scen1,
+tmp1 <- run.scenarios(nrepl = 10, trapset = traps1, scenarios = scen1,
     fit = TRUE, extractfn = trim)
 tmp2 <- predict(tmp1)
 tmp3 <- select.stats(tmp2, 'D', c('estimate','RB','RSE'))
 summary(tmp3)
 }
+}
+
 
 \keyword{manip}

@@ -11,7 +11,6 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown} 
   \usepackage[utf8]{inputenc}
 header-includes: 
-   - \usepackage[utf8]{inputenc}
    - \renewcommand{\vec}[1]{\mathbf{#1}}
 ---
 
@@ -122,7 +121,7 @@ sumnrm <- function(CH)
     c(n = nrow(CH), r = sum(CH) - nrow(CH), 
       m = sum(unlist(secr::moves(CH))>0, na.rm = TRUE))
 sim <- run.scenarios(scen, trapset = traplist, nrepl = 1000, 
-                     extractfn = sumnrm, fit = FALSE, ncores = 5)
+                     extractfn = sumnrm, fit = FALSE, ncores = 2)
 meanse <- function(xmat) 
     c(nrow(xmat), apply(xmat,2,mean), apply(xmat,2,sd) / sqrt(nrow(xmat)))
 simout <- round(t(sapply(sim$output, meanse)),4)

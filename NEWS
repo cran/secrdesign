@@ -1,3 +1,8 @@
+Changes in version 2.5.1 (2017-10-09)
+
+Other
+    o   tweaks in vignettes to keep ncores within CRAN limit
+
 Changes in version 2.5.0 (2017-10-06)
 
 New features or changed behaviour of old functions

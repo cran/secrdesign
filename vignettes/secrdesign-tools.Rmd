@@ -9,9 +9,7 @@ output:
 vignette: >
   %\VignetteIndexEntry{Miscellaneous tools}
   %\VignetteEngine{knitr::rmarkdown} 
-  \usepackage[utf8]{inputenc}
 header-includes: 
-   - \usepackage[utf8]{inputenc}
    - \renewcommand{\vec}[1]{\mathbf{#1}}
 ---
 
@@ -192,7 +190,7 @@ Here is a simple example[^footnote5]. Results are overplotted.
 par(mar = c(4,5,2,2), mgp = c(2.4,0.6,0))
 out2 <- optimalSpacing(D = 5, traps = grid, detectpar = list(lambda0 = 0.2, sigma = 20), 
                        noccasions = 5, plt = TRUE, ylim = c(0,0.6),
-                       nrepl = 20, ncores = 4, seed = 237)
+                       nrepl = 20, ncores = 2, seed = 237)
 ```
 
 **Fig. 2.** Simulated RSE(D-hat) (open circles) corresponding to **Fig. 1**. Vertical lines indicate a $\pm 2\mbox{SE}$ confidence interval.

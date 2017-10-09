@@ -12,8 +12,7 @@ vignette: >
 ---
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE}
-library(secrdesign)
-## setwd('d:/density secr 2.10/secrdesign/vignettes')
+## setwd('d:/density secr 3.1/secrdesign/vignettes')
 load('runsims1.RData')
 load('runsims2.RData')
 options(width = 85)
@@ -27,18 +26,19 @@ design of studies using spatially explicit capture--recapture
 fitting functions in package **secr** to emulate many features of
 the 'Simulator' module of Density 5.0 (Efford 2012). 
 
-This document is a technical guide to **secrdesign**. It assumes
-an understanding of estimator properties such as bias, precision, and
+This document is a technical guide to the simulation aspects of **secrdesign**. 
+Functions that do not rely on simulation are described in [secrdesign-tools.pdf].
+
+We assume an understanding of estimator properties such as bias, precision, and
 confidence interval coverage, and the use of Monte Carlo simulation to
-predict the frequentist performance of different sampling
-designs. Using **secrdesign** can be daunting because it allows
-for many different combinations of data generation, model fitting and
-summary statistics. Several examples are given to indicate the
+predict the performance of different sampling designs. Using **secrdesign** can 
+be daunting because it allows for many different combinations of data generation, 
+model fitting and summary statistics. Several examples are given to indicate the
 range of possibilities.
 
 #Introduction
 
-When designing a study we assume you have in mind --
+When designing a study you should have in mind --
 
 (i) a population parameter you want to measure (probably density or
 population size),
@@ -100,14 +100,14 @@ x 6 grid of multi-catch traps at 20-m spacing. Density takes one of
 two levels (5/ha or 10/ha) and detection parameters sigma and lambda0 are
 fixed.
 
-```{r simpex, cache = TRUE, eval = TRUE}
+```{r simpex, cache = TRUE, eval = TRUE, warning = FALSE}
 library(secrdesign)
 scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 traps1 <- make.grid(8, 8, spacing = 25)
 scenarioSummary(scen1, traps1) 
 ```
 
-The initial summary includes the expected number of individuals (En) and recaptures (Er), and an approximate rule-of-thumb relative standard error for estimated density (rotRSE). See `?scenarioSummary` and [secrdesign-tools.pdf] for further details.
+The initial summary includes the expected number of individuals (En) and recaptures (Er), and an approximate rule-of-thumb relative standard error for estimated density (rotRSE). `scenarioSummary` approximates the default detection function (HN) by a hazard-based detection function (HHN) with a warning that is not shown here. See `?scenarioSummary` and [secrdesign-tools.pdf] for further details.
 
 ```{r simpex2, cache = TRUE}
 sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
@@ -1170,9 +1170,7 @@ Code to illustrate the use of linear habitat models. This assumes you
 have the package **secrlinear**, which is not yet on CRAN.
 
 ```{r, eval = FALSE}
-
 library(secrlinear)
-library(secrdesign)
 
 ## create a habitat geometry
 x <- seq(0, 4*pi, length = 200)
