@@ -14,8 +14,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.5.1\cr
-Date: \tab 2017-10-09\cr
+Version: \tab 2.5.2\cr
+Date: \tab 2017-10-10\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -50,7 +50,7 @@ Other functions not used exclusively for simulation are:
   \code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr
 }
 
-Documentation for expected counts is in \url{../doc/secrdesign-Enrm.pdf}. Another vignette \url{../doc/secrdesign-tools.pdf} demonstrates other tools. These include the \code{optimalSpacing} function, for finding the detector spacing that yields the greatest precision for a given detector geometry, number of sampling occasions, density and detection parameters.
+Documentation for expected counts is in \href{http://www.otago.ac.nz/density/pdfs/secrdesign-Enrm.pdf}{secrdesign-Enrm.pdf}. Another vignette \href{http://www.otago.ac.nz/density/pdfs/secrdesign-tools.pdf}{secrdesign-tools.pdf} demonstrates other tools. These include the \code{optimalSpacing} function, for finding the detector spacing that yields the greatest precision for a given detector geometry, number of sampling occasions, density and detection parameters.
 
 Help pages are also available as \url{../doc/secrdesign-manual.pdf}.
 

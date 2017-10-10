@@ -1,7 +1,7 @@
-Changes in version 2.5.1 (2017-10-09)
+Changes in version 2.5.2 (2017-10-10)
 
 Other
-    o   tweaks in vignettes to keep ncores within CRAN limit
+    o   vignettes secrdesign-Enrm.pdf and secrdesign-tools.pdf removed (see www.otago.ac.nz/density/pdfs)
 
 Changes in version 2.5.0 (2017-10-06)
 
