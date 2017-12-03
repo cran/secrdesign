@@ -124,6 +124,42 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         c(meannt = Ent, CVnt = sqrt(varnt)/Ent, ntratio = ntratio, CVPxy = sqrt(varpd)/Epd)
     }
     
+    saturation <- function (D, detectpar, detectfn, tr, mask) {
+        if (!(detector(tr)[1] %in% c('multi','proximity', 'capped', 'count'))) {
+            warning ("saturation only available for 'multi','proximity', 'capped' or 'count' detectors")
+            return(NA)
+        }
+        if (is.character(detectfn))
+            detectfn <- match.arg(detectfn)
+        detectfn <- secr:::valid.detectfn(detectfn, 14:18)
+        cellarea <- attr(mask, 'area') 
+        dk <- edist(tr, mask)                                             # K x M
+        if (detectfn == 14)
+            lambda <- exp(-dk^2/2/detectpar$sigma^2)  # K x M
+        else if (detectfn == 15)
+            lambda <- 1 - exp(-(dk/detectpar$sigma)^-detectpar$z)
+        else if (detectfn == 16)
+            lambda <- exp(-dk^2/2/detectpar$sigma^2)  
+        else if (detectfn == 17)
+            lambda = exp(- (dk-detectpar$w)^2 / 2 / detectpar$sigma^2)
+        else if (detectfn == 18)
+            lambda = pgamma(dk, shape = detectpar$z, scale = detectpar$sigma/detectpar$z, 
+                            lower.tail = FALSE, log.p = FALSE)
+        lambda <- detectpar$lambda0 * lambda
+        if (detector(tr)[1] == "multi") {
+            Hi <- apply(lambda, 2, sum)                                 # M       overall hazard of detn animal at x (summed over traps)
+            hmult <- (1 - exp(-Hi)) / Hi
+            pkx <- sweep(lambda, MARGIN = 2, STATS = hmult, FUN = "*")  # K x M   Pr animal at x caught trap k
+            Hk <- apply(-log(1-pkx), 1, sum) * D * cellarea             # K     integrated hazard for trap k. Assumes homogeneous D
+            mean(1-exp(-Hk))  
+        }
+        else {
+            H <- apply(lambda, 1, sum) * D * cellarea                         # K
+            mean(1-exp(-H))
+        }
+        
+    }
+    
     ##---------------------------------------------------------------------------
     ##
     onescenario <- function (scenario) {
@@ -139,8 +175,12 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         Pxy <- pdot(mask, traps, detectfn, detectpar, scenario$noccasions)
         esa <- sum(Pxy) * attr(mask, 'area')
         
-        nrm <- Enrm(scenario$D, traps, mask, detectpar, 
-                    scenario$noccasions, detectfn = detectfn)
+        sat <- saturation (scenario$D, detectpar, detectfn, traps, mask)
+        if (detector(traps)[1] %in% c("multi", "proximity", "count"))
+            nrm <- Enrm(scenario$D, traps, mask, detectpar, 
+                        scenario$noccasions, detectfn = detectfn)
+        else
+            nrm <- c(En=NA,Er=NA,Em=NA)
         rotRSE <- scenario$CF / sqrt(min(nrm[1:2]))
         rotRSEB <- (rotRSE^2 - 1 / (scenario$D * maskarea(mask)))^0.5
         
@@ -153,7 +193,8 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
                  rotRSEB = round(rotRSEB,4),
                  arrayN = ntraps[scenario$trapsindex],
                  arrayspace = round(spaces[scenario$trapsindex]/scenario$sigma,4),
-                 arrayspan = round(spans[scenario$trapsindex]/scenario$sigma,4))
+                 arrayspan = round(spans[scenario$trapsindex]/scenario$sigma,4),
+                 saturation = sat)
 
         if (costing) {
             dots <- list(...)

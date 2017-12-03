@@ -22,6 +22,7 @@
 ## 2017-05-06 detectfn specified in scenario overrides det.args 
 ## 2017-07-26 allow for S3 rbind.capthist
 ## 2017-09-14 nrepeat bug with method = 'none'
+## 2017-12-01 tweak to fitarg$start: only one value per par
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -56,7 +57,6 @@ fullargs <- function (args, default, index) {
 ###############################################################################
 
 defaultextractfn <- function(x) {
-    ## 2015-01-27
     if (inherits(x, 'try-error')) {
         ## null output: dataframe of 0 rows and 0 columns
         data.frame()
@@ -110,7 +110,6 @@ defaultextractfn <- function(x) {
         if (is.data.frame(out))
             out
         else {
-            ## 2015-01-26
             warning ("summarising only first session, group or mixture class")
             out[[1]]
         }
@@ -255,6 +254,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
                 detarg$noccasions <- noccasions[i]
             #####################
             ## simulate detection
+ 
             if (sighting(grid)) {
                 CHi <- do.call(sim.resight, detarg)
             }
@@ -278,7 +278,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
                 ####################################
                 ## CH <- do.call(rbind.capthist, CH)
                 ## 2017-07-26 allow for S3 rbind
-                class(CH) <- c("list","capthist")
+                class(CH) <- c("capthist", "list")    # reversed 2017-10-24
                 CH <- do.call(rbind, CH)
                 ####################################
                 covariates(CH)$group <- rep(group, nc)
@@ -315,7 +315,6 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
 
         if (is.null(fitarg$model))
             fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
-
         if (fitarg$start[1] == 'true') {
             ## check to see if simple 'true' values will work
             ## requires intercept-only model for all parameters
@@ -324,7 +323,7 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, ...) {
             vars <- unlist(lapply(lapply(model, terms), attr, 'term.labels'))
             if (fitarg$CL) par$D <- NULL
             if ('h2' %in% vars) par$pmix <- 0.5
-            fitarg$start <- par
+            fitarg$start <- lapply(par, '[', 1)   ## 2017-12-01 only first value
             if ((length(vars) != 0) & (fitarg$method == 'none')) {
                 ## not yet ready for interspersed beta coef
                 stop("method = 'none' requires full start vector for complex models")
@@ -522,7 +521,6 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         full.fit.args[[i]]$details$nsim <- replace(full.fit.args$details,'nsim',chatnsim)
     ##--------------------------------------------
     ## construct masks as required
-
     if (missing(maskset)) {
         trapsigma <- scenarios[, c('trapsindex', 'sigma'), drop = FALSE]
         uts <- unique (trapsigma)

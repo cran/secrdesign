@@ -1,8 +1,12 @@
 \name{predict.fittedmodels}
+\alias{predict}
+\alias{coef}
+\alias{derived}
+\alias{region.N}
 \alias{predict.fittedmodels}
 \alias{coef.fittedmodels}
-\alias{derived.SL}
-\alias{regionN.SL}
+\alias{derived.fittedmodels}
+\alias{region.N.fittedmodels}
   
 \title{ Extract Estimates From Fitted Models }
 
@@ -20,9 +24,9 @@
 
 \method{coef}{fittedmodels}(object, ...)
 
-derived.SL(object, ...)
+\method{derived}{fittedmodels}(object, ...)
 
-regionN.SL(object, ...)
+\method{region.N}{fittedmodels}(object, ...)
 
 }
 
@@ -34,19 +38,19 @@ regionN.SL(object, ...)
 \details{
   
 These functions are used when output from \code{\link{run.scenarios}}
-has been saved as fitted models. \code{derived.SL} and \code{regionN.SL}
-require a full fit (including the design object) whereas a trimmed model
+has been saved as fitted models. \code{derived} and \code{region.N}
+require a full fit (including the mask and design0 objects) whereas a trimmed model
 is sufficient for \code{predict} and \code{coef}.
 
-\code{derived.SL} is used to compute the Horvitz-Thompson-like estimate
+\code{derived} is used to compute the Horvitz-Thompson-like estimate
 of density when \code{\link[secr]{secr.fit}} has been used with \code{CL
 = TRUE}; it is roughly equivalent to \code{predict}.
 
-\code{regionN.SL} predicts the realised number (R.N) or expected number
+\code{region.N} predicts the realised number (R.N) or expected number
 (E.N) in a masked area. When detector layouts and/or \code{sigma} vary,
 the masked area will also vary (arbitrarily, depending on the buffer
 argument `xsigma') unless a mask is provided by the user; this may be
-done either in \code{run.scenarios} or in \code{regionN.SL}.
+done either in \code{run.scenarios} or in \code{region.N}.
 
 }
 
@@ -54,14 +58,17 @@ done either in \code{run.scenarios} or in \code{regionN.SL}.
   
   An object with class (`estimatetables', `secrdesign', `list') with
   appropriate outputtype (`predicted', `coef', `derived', `regionN';
-  sSee also \code{\link{run.scenarios}}).
+  see also \code{\link{run.scenarios}}).
 
 }
 
 \seealso{
 
   \code{\link{run.scenarios}}
-  
+  \code{\link[secr]{coef.secr}}
+  \code{\link[secr]{predict.secr}}
+  \code{\link[secr]{derived.secr}}
+  \code{\link[secr]{region.N.secr}}
 }
 
 \examples{
@@ -74,8 +81,26 @@ tmp1 <- run.scenarios(nrepl = 10, trapset = traps1, scenarios = scen1,
 tmp2 <- predict(tmp1)
 tmp3 <- select.stats(tmp2, 'D', c('estimate','RB','RSE'))
 summary(tmp3)
-}
+
+## for derived and region.N need more than just 'trimmed' secr object
+## use argument 'keep' to save mask and design0 usually discarded by trim
+tmp4 <- run.scenarios(nrepl = 10, trapset = traps1, scenarios = scen1,
+    fit = TRUE, extractfn = trim, keep = c('mask','design0'))
+
+summary(derived(tmp4))
+
+## for region.N we must specify the parameter for which we want statistics
+## (default 'D' not relevant)
+tmp5 <- select.stats(region.N(tmp4), parameter = 'E.N')
+summary(tmp5)
 }
 
+}
+
+\section{Note}{
+
+From \pkg{secrdesign} 2.5.3 the methods described here replace the functions \code{derived.SL} and \code{regionN.SL}. This is for compatibility with \pkg{secr}.
+
+}
 
 \keyword{manip}

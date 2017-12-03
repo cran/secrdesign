@@ -8,6 +8,7 @@
 
 /* 2017-03-26 created */
 /* 2017-08-02 L2 output from sumpkC */
+/* 2017-10-31 detectfn HAN, HCG bug fixed */
 
 #include "secrdesign.h"
 #include <time.h>
@@ -86,7 +87,7 @@ void sumpkC (
 )
 {
     int k,m;
-    double hk, pk, ps, sumhk, sumhk2, d2km;
+    double hk, pk, ps, sumhk, sumhk2, d2km, dkm;
 
     *resultcode = 1;                   /* generic failure */
     if (*type > 2) error("unrecognised type in sumpkC");
@@ -96,16 +97,17 @@ void sumpkC (
 	sumhk2 = 0;
 	for (k = 0; k < *kk; k++) {
 	    d2km = d2(k, m, traps, mask, *kk, *mm);
+	    dkm = sqrt(d2km);
 	    if (*fn == 14)
 	        hk = par[0] * exp(-d2km / 2 / par[1] / par[1]);
 	    else if (*fn == 15)
 	        hk = par[0] * (1 - exp(- pow(sqrt(d2km) / par[1] , - par[2])));
 	    else if (*fn == 16)
-	        hk = par[0] * exp(-sqrt(d2km) / par[1]);
-	    else if (*fn == 17)
-	        hk = par[0] * exp(- sqrt(d2km-par[2]) * sqrt(d2km-par[2]) / 2 / par[1] / par[1]);
+	        hk = par[0] * exp(-dkm / par[1]);
+	    else if (*fn == 17) 
+		hk = par[0] * exp(- (dkm-par[2]) * (dkm-par[2])  / 2 / par[1] / par[1]);	    
 	    else if (*fn == 18)
-	        hk = par[0] * pgamma(sqrt(d2km), par[2], par[1]/par[2], 0,0);
+	        hk = par[0] * pgamma(dkm, par[2], par[1]/par[2], 0,0);
 	    else error("only detectfn 14:18");
 	    
 	    if (*type == 1) {

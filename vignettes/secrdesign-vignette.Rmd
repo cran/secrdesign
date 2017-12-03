@@ -11,11 +11,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r, eval = TRUE, echo=FALSE, message=FALSE}
-## setwd('d:/density secr 3.1/secrdesign/vignettes')
-load('runsims1.RData')
-load('runsims2.RData')
+```{r setup, eval = TRUE, echo=FALSE, message=FALSE}
 options(width = 85)
+makepng <- FALSE
 ```
 
 \vspace{15pt}
@@ -36,7 +34,7 @@ be daunting because it allows for many different combinations of data generation
 model fitting and summary statistics. Several examples are given to indicate the
 range of possibilities.
 
-#Introduction
+# Introduction
 
 When designing a study you should have in mind --
 
@@ -92,7 +90,7 @@ data and fit SECR models, select some statistics with
     statistics. Each form of output requires different subsequent
     handling. The default path is shown by solid blue arrows.
 
-##A simple example
+## A simple example
 
 For an introductory example we construct a simple set of
 scenarios and perform some simulations. The trap layout is a default 6
@@ -100,7 +98,7 @@ x 6 grid of multi-catch traps at 20-m spacing. Density takes one of
 two levels (5/ha or 10/ha) and detection parameters sigma and lambda0 are
 fixed.
 
-```{r simpex, cache = TRUE, eval = TRUE, warning = FALSE}
+```{r Ex1, cache = TRUE, eval = TRUE, warning = FALSE}
 library(secrdesign)
 scen1 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 traps1 <- make.grid(8, 8, spacing = 25)
@@ -109,7 +107,7 @@ scenarioSummary(scen1, traps1)
 
 The initial summary includes the expected number of individuals (En) and recaptures (Er), and an approximate rule-of-thumb relative standard error for estimated density (rotRSE). `scenarioSummary` approximates the default detection function (HN) by a hazard-based detection function (HHN) with a warning that is not shown here. See `?scenarioSummary` and [secrdesign-tools.pdf] for further details.
 
-```{r simpex2, cache = TRUE}
+```{r Ex1run, cache = TRUE}
 sims1 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios =
      scen1, seed = 345, fit = TRUE, fit.args = list(detectfn = 'HHN'))
 ```
@@ -118,7 +116,7 @@ We use the summary method for estimatetables
 to view results, and here display only the summary output (omitting a
 header that describes the simulations).
 
-```{r simpex3, eval = TRUE}
+```{r Ex1out, eval = TRUE}
 summary(sims1)$OUTPUT
 ```
 
@@ -143,7 +141,7 @@ object, which may also include detector-level covariates and detector
 Multiple layouts are combined in a single list object; component
 names ('grid6x6' etc.) will be used to annotate the output.
 
-```{r, eval = TRUE}
+```{r layouts, eval = TRUE}
 library(secrdesign)
 mydetectors <- list(grid6x6 = make.grid(6,6),
                     grid8x9 = make.grid(8,9),
@@ -158,7 +156,7 @@ default spacing 20 m. See `?secr::make.grid` for other options.
 The function `make.scenarios()` constructs a dataframe in which each row
 defines a simulation scenario. Its arguments (with defaults) are:
 
-```{r,eval=FALSE}
+```{r make.s, eval = FALSE}
 make.scenarios (trapsindex = 1, noccasions = 3, nrepeats = 1, D, g0,
     sigma, lambda0, detectfn = 0, recapfactor = 1, popindex = 1,
     detindex = 1, fitindex = 1, groups, crosstraps = TRUE)
@@ -175,7 +173,7 @@ input values (trapsindex, noccasions, nrepeats, D, g0, sigma, lambda0,
 detectfn, recapfactor, popindex, and fitindex) using
 `expand.grid`. For example,
 
-```{r, eval = TRUE}
+```{r scen1, eval = TRUE}
 make.scenarios (trapsindex = 1:3, noccasions = 4, D = 5, g0 = 0.2, sigma = c(20,30))
 ```
 
@@ -192,7 +190,7 @@ vectors 'trapsindex', 'noccasions', and 'nrepeats' are locked together
 as required), and only the combination is crossed with the remaining
 parameter scenarios:
 
-```{r, eval = TRUE}
+```{r scen2, eval = TRUE}
 make.scenarios (trapsindex = 1:3, noccasions = c(8,4,2), D = 5, g0 = 0.2,
                 sigma = c(20,30), crosstraps = FALSE)
 ```
@@ -225,18 +223,20 @@ respectively. These are for more advanced use: you may not need them.
 
 When a vector of group identifiers is provided in 'groups', the population in each scenario is a set of independently sampled groups, each defined on a separate row. Groups are initially assigned the same parameter values and other settings: it is up to the user to insert group-specific values (example at [Grouped populations](#grouped-populations)).
 
-#Running simulations
+# Running simulations
 
 The function `run.scenarios()` generates multiple datasets and,
 if requested, fits an SECR model to each one. In this section we
 describe its main arguments, with additional detail on habitat masks
 and customizing the output.
 
-##Arguments of `run.scenarios()`
-```{r, eval = FALSE}
+## Arguments of `run.scenarios()`
+
+```{r run.sc, eval = FALSE}
 run.scenarios (nrepl, scenarios, trapset, maskset, xsigma = 4,
-    nx = 32, pop.args, det.args, fit = FALSE, fit.args, extractfn =
-    NULL, multisession = FALSE, ncores = 1, seed = 123)
+    nx = 32, pop.args, det.args, fit = FALSE, fit.args, chatnsim = 0,
+    extractfn = NULL, multisession = FALSE, ncores = 1, byscenario = TRUE, 
+    seed = 123)
 ```
 
 `nrepl` determines the number of replicate simulations. Make
@@ -285,55 +285,20 @@ model specifications then `fit.args` should be a list of lists,
 one per specification, with `fitindex` taking values in the
 range 1:nspec.
 
-The use of `multisession` and `ncores` is discussed under [Additional topics](#additional-topics).
+The use of `multisession`, `ncores` and `byscenario` is discussed under 
+[Additional topics](#additional-topics).
 
-##Customising run.scenarios()
+## Customising run.scenarios()
 
 The output from `run.scenarios()` is controlled by its argument
 `extractfn`. This is a short function that is applied either
 (i) to each simulated raw dataset (capthist object) (`fit =
   FALSE`), or (ii) to each fitted model (`fit = TRUE`).
 
-The default (builtin) `extractfn` (below) behaves appropriately for either
+The default (builtin) `extractfn` ([Appendix 1](#appendix1)) behaves appropriately for either
 data type. It is mostly concerned with summarising raw counts when fit = FALSE.
 A dataframe with no rows is returned when a model fails to fit. 
-```{r}
-extractfn <- function(x) {
-    if (inherits(x, 'capthist')) {
-        ## summarised raw data
-        counts <- function(CH) {
-            ## for single-session CH
-            if (nrow(CH)==0) 
-                c(n=0, ndet=0, nmov=0, dpa = NA)
-            else {
-                nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
-                ## detectors per animal
-                dpa <- if (length(dim(CH)) == 2)
-                    mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
-                else
-                    mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-                c(n=nrow(CH), ndet=sum(abs(CH)>0), nmov=nmoves, dpa = dpa)
-            }
-        }
-        if (ms(x)) 
-            unlist(lapply(x, counts))
-        else {
-            gp <- covariates(x)$group
-            if (is.null(gp)) 
-                counts(x)
-            else 
-                unlist(lapply(split(x,gp,dropnullocc=TRUE), counts))
-        }            
-    }
-    else if (inherits(x,'secr') & (!is.null(x$fit)))
-        ## fitted model:
-        ## default predictions of 'real' parameters
-        predict(x)
-    else
-        ## null output: dataframe of 0 rows and 0 columns
-        data.frame()   
-}
-```
+
 When `fit = FALSE`, the default output from each replicate is a vector
 of 4 summary statistics:
 
@@ -362,7 +327,7 @@ limits in R, and saving everything is generally not a good idea. For
 most purposes it is sufficient to save a trimmed version of the fitted
 model `extractfn = trim` (note **secr** defines the
 function trim). However, the full model is needed for
-`derived.SL` or `regionN.SL` (see [Extracting estimate tables from fitted models](#extracting-estimate-tables-from-fitted-models)).
+`derived` or `region.N` (see [Extracting estimate tables from fitted models](#extracting-estimate-tables-from-fitted-models)).
 
 `run.scenarios()` sets the class[^1] of its output to distinguish
 among fitted models ("fittedmodels"), estimate tables from predict,
@@ -380,7 +345,7 @@ When `fit = TRUE`, analyses are performed with
 `extractfn`. The function should accept a `capthist' object as
 input. For example, conventional closed-population estimates may be
 obtained with
-```{r, eval = FALSE}
+```{r closedN, cache = TRUE}
 closedNsim <- run.scenarios (nrepl = 10, scenarios = scen1, trapset = traps1,
      extractfn = closedN, estimator = c("null", "chao", "chaomod"))
 ```
@@ -394,7 +359,7 @@ alternative analyses will usually require careful selection of
 (see [Choosing the statistics to summarise](#choosing-the-statistics-to-summarise)).
 
 An alternative is to write your own code along these lines:
-```{r, eval = FALSE}
+```{r owncod, eval = FALSE}
 sum1 <- function(out) {
     require(abind)
     ## collapse replicates to an array, omitting non-numeric column
@@ -406,6 +371,7 @@ sum1 <- function(out) {
     }
 lapply(closedNsim$output, sum1)
 ```
+
 ## More on masks
 
 A habitat mask in **secr** is a raster representation of the
@@ -443,7 +409,7 @@ trapsindex, in the two cases). Otherwise, the user must have manually
 added a maskindex column to scenarios to clarify which mask should
 be used with which scenario.
 
-#Summarising simulation output
+# Summarising simulation output
 
 `run.scenarios` usually takes a long time to run, but having
 saved its output you can quickly extract and summarise the results in
@@ -466,38 +432,34 @@ form.
 
 ## Extracting estimate tables from fitted models
 
-The methods `predict` and `coef` for the 'fittedmodels'
-class and the function `derived.SL` are provided to extract
-estimates of 'real' parameters from each fitted model. These are
-direct analogues of `predict`, `coef` and
-`derived` in **secr**. Here, they apply across all
-replicates of all scenarios and return an object of class
-`estimatetables`. `regionN.SL` is another possibility.
+The methods `predict`, `coef`, `derived' and `region.N' for the 'fittedmodels'
+class are provided to extract estimates of 'real' parameters from each fitted model. These are direct analogues of `predict`, `coef`, `derived` and `region.N' in **secr**. Here, they apply across all
+replicates of all scenarios and return an object of class `estimatetables`. 
 
 In each case, the result is a dataframe or list of dataframes for each
 replicate. Rows correspond to estimated parameters (or 'R.N' and 'E.N'
-for `regionN.SL`) and columns to the respective estimates,
+for `region.N`) and columns to the respective estimates,
 standard errors, and confidence limits (with some variations).
 
-The \dots argument of the functions `predict`, `coef`, `derived.SL` and `regionN.SL` lets you pass arguments such as `alpha` to the corresponding **secr** function (e.g., `predict.secr` or `derived`).
+The \dots argument of the functions `predict`, `coef`, `derived` and `region.N` lets you pass arguments such as `alpha` to the corresponding **secr** function (e.g., `predict.secr` or `derived.secr`).
 
 We can skip this step for the output from our simple example as it is
 already in `estimatetables' form.
 
 ## Choosing the statistics to summarise
 
-Given tabular output from `predict()` or `derived.SL()`,
+Given tabular output from `predict()` or `derived()`,
 we must select replicate-specific numerical quantities for further
 summarisation.[^3] This is the role of `select.stats()`, which has arguments --
 
-```{r, eval=FALSE}
+```{r selsta, eval=FALSE}
 select.stats(object, parameter = "D", statistics)
 ```
 
 The parameter of interest defaults to density ("D"); others such as
 "g0" or "sigma" may be substituted,so long as they appear in the input
 object. To check which parameters are available use
-```{r, eval=FALSE}
+```{r fndpar, eval=FALSE}
 find.param(object)
 ```
 
@@ -559,7 +521,7 @@ large number of replicates.
 Returning to our simple example, we apply `select.stats()` to
 focus on the density parameter "D".
 
-```{r, eval = TRUE}
+```{r seldem, eval = TRUE}
 stats1 <- select.stats(sims1, parameter = "D", statistics = c("estimate",
    "lcl", "ucl", "RB", "RSE", "COV"))
 lapply(stats1$output, head, 4)
@@ -579,7 +541,7 @@ simulation fails. The function `validate` sets selected 'target'
 statistics to NA for replicates in which another test statistic is
 out-of-range or NA:
 
-```{r,eval=FALSE}
+```{r valid, eval = FALSE}
 x <- validate (x, test, validrange = c(0, Inf), targets = test)
 ```
 
@@ -591,13 +553,13 @@ for `targets` to indicate all columns.
 and returns a modified selectedstatistics object as output. See
 [Learned trap response](#learned-trap-response) for an application.
 
-##Summary method
+## Summary method
 
 The `summary` method for 'selectedstatistics' objects reports both
 header information on the simulation scenarios and user-selected
 summaries of the pre-selected statistics.
 
-```{r,eval=FALSE}
+```{r summry, eval = FALSE}
 summary (object, dec = 5, fields = c("n", "mean", "se"), alpha = 0.05,
     type = c("list", "dataframe", "array"), ...)
 ```
@@ -647,8 +609,8 @@ To recap -- a summary value is reported for each combination of a
 selected statistic, computed for each replicate, and a 'field' that
 summarises the statistic across replicates, potentially resulting in a
 table with this structure:
-
-```{r,echo=FALSE, comment=''}
+\pagebreak
+```{r stafld,echo=FALSE, comment=''}
 bullet <-  '*' ## rawToChar(as.raw(149))
 tmp <- matrix(bullet, nr=8, ncol=12)
 dimnames(tmp) <- list(Statistics = c("estimate","SE.estimate","lcl","ucl","RB","RSE","ERR","COV"),
@@ -656,7 +618,7 @@ Fields = c("n","mean","se","sd","min","max","lcl","ucl","rms","median","q025","q
 tmp[1:6,9] <- ""
 tmp[3:5,7:8] <- ""
 tmp[8,7:12] <- ""
-print(tmp, qu=F)
+print(tmp, quote = FALSE)
 ```
 
 Cells are left blank for combinations that are unlikely to be
@@ -665,7 +627,7 @@ applied to other statistics. 'n', 'mean' and 'se' summarise the COV
 indicator, but other potential summaries are (almost) meaningless.
 
 Apply this to the selected statistics from our simple example:
-```{r, eval = TRUE}
+```{r Ex1sum, eval = TRUE}
 summary(stats1, c('n', 'mean', 'se', 'median'))
 ```
 
@@ -681,13 +643,13 @@ the graphics options mfcol or mfrow to control the layout.  For `type =
 "CI"` the statistics must include 'estimate', 'lcl' and 'ucl' (or
 'beta', 'lcl' and 'ucl' if `outputtype = "coef"`).
 
-```{r, eval=FALSE}
+```{r plot, eval=FALSE}
 par(mfrow = c(2,2))
 plot(stats1, type = "hist", statistic = "estimate")
 plot(stats1, type = "CI")
 ```
-```{r, echo=FALSE, eval=FALSE}
-png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig3.png',
+```{r plotpng, echo=FALSE, eval=makepng}
+png(file='d:/density secr 3.1/secrdesign/vignettes/secrdesign-fig3.png',
     width = 850, height = 800)
 par(mfrow = c(2,2), cex=1.2)
 plot(stats1, type = "hist", statistic = "estimate")
@@ -706,7 +668,8 @@ dev.off()
 ## Parallel processing
 
 Setting `ncores > 1` causes `run.scenarios()` to run
-separate scenarios on separate cores. This uses the R package
+separate scenarios on separate cores (given the default 
+`byscenario = TRUE`). This uses the R package
 **parallel**. Technically, it relies on Rscript, and
 communication between the master and worker processes is via
 sockets. As stated in the R **parallel** documentation "Users of
@@ -721,8 +684,9 @@ maximum available cores for `run.scenarios()` then expect any
 other processes on the machine to slow down!
 
 Running one scenario per core is suboptimal if scenarios differ widely
-in how long they take to run: the system waits for the slowest. There
-is no way around this limitation in **secrdesign**.
+in how long they take to run: the system waits for the slowest. Setting 
+`byscenario = FALSE` provides a way around this: replicates within a 
+scenario are divided among cores, instead of all replicates going to one core.
 
 Random number generation for multiple cores uses the "L'Ecuyer-CMRG""
 random number generator as described in `?RNG`.
@@ -746,11 +710,11 @@ to use `start = "true"`. However, this works only when there is
 a 1:1 relationship between 'beta' and 'real' parameters; it does
 not work when 'recapfactor' is specified.
 
-```{r, eval = FALSE}
+```{r Ex2, cache = TRUE}
 sims2 <- run.scenarios(nrepl = 50, trapset = traps1, scenarios = scen1,
     fit = TRUE, fit.args = list(method = "none"))
 ```
-```{r, eval = TRUE}
+```{r Ex2Sum, eval = TRUE}
 summary(sims2)
 ```
 
@@ -774,7 +738,7 @@ population we use the 'IHP' option for argument `model2D` in
   name of the particular mask covariate you wish to use for density,
   and name your mask in the `maskset' argument.
 
-A full demonstration is given in the Appendix ([Non-uniform possums](#non-uniform-possums)).
+A full demonstration is given in Appendix 2 ([Non-uniform possums](#non-uniform-possums)).
 
 To visualize simulated populations you should set `savepopn =
   TRUE` in det.args and later extract the popn attribute from the
@@ -824,7 +788,7 @@ With a linear mask, `run.scenarios` defaults to
 `secrlinear::networkdistance` for the distance function
 (`secr.fit` argument `details$userdist`).
 
-##Splitting data generation and model fitting
+## Splitting data generation and model fitting
 
 Each new detector layout or new model specification (in a
 `fit.args` list) defines a new scenario. The default procedure
@@ -836,7 +800,7 @@ the same dataset, save raw data from an initial call to
 `fit.models`. You can also peek at the raw data with the
 `summary` method.
 
-```{r, eval = FALSE}
+```{r Ex3, cache = TRUE}
 scen3 <- make.scenarios(D = c(5,10), sigma = 25, g0 = 0.2)
 traps3 <- make.grid()
 raw3 <- run.scenarios(nrepl = 50, trapset = traps3, scenarios =
@@ -844,7 +808,7 @@ raw3 <- run.scenarios(nrepl = 50, trapset = traps3, scenarios =
 summary(raw3)
 ## fit and summarise models
 sims3 <- fit.models(raw3, fit.args = list(list(model = g0~1),
-    list(model = g0~T)), fit = TRUE, ncores = 4)
+    list(model = g0~T)), fit = TRUE, ncores = 4, byscenario = FALSE)
 summary(sims3)
 ```
 
@@ -863,7 +827,7 @@ from the varying number and placement of animals, and the sampling
 process; this variance may be reduced by fixing the number of
 individuals (`pop.args = list(Ndist = "fixed")`).
 
-##Populations with sub-classes or multiple sessions
+## Populations with sub-classes or multiple sessions
 
 Simulation of structured populations is introduced in **secrdesign** 2.2.0 and is still experimental. 
 
@@ -873,9 +837,9 @@ Rows sharing the same scenario number are recognised by `run.scenarios` as subcl
 
 The original sub-class of each individual is recorded as an individual covariate named "group". This is a factor. It may ignored in the fitted model, or used in such `secr.fit` arguments as 'groups' and 'hcov', or included in models directly as an individual covariate when `CL = TRUE`. (If the output from `predict.secr` is not a single dataframe then you will have to write a custom `extractfn`).
 
-An example is given in the Appendix ([Grouped populations](#grouped-populations)).
+An example is given in Appendix 2 ([Grouped populations](#grouped-populations)).
 
-#Limitations, tips and troubleshooting
+# Limitations, tips and troubleshooting
 
 **secrdesign** has some limitations (Surprise!).
 
@@ -927,7 +891,7 @@ probability. Heterogeneity may be simulated as discrete subclasses (see precedin
 8. If your summaries do not include enough significant digits, increase
 the 'dec' argument of `summary.selectedstatistics`!
 
-#References
+# References
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit
    maximum likelihood methods for capture--recapture
@@ -968,7 +932,74 @@ Williams, B. K., Nichols, J. D. and Conroy, M. J. (2002)
 
 \pagebreak
 
-#Appendix. Examples
+# Appendix 1. Default extractfn for `run.scenarios`. {#appendix1}
+
+```{r extrfn}
+defaultextractfn <- function(x) {
+    if (inherits(x, 'try-error')) {
+        ## null output: dataframe of 0 rows and 0 columns
+        data.frame()
+    }
+    else if (inherits(x, 'capthist')) {
+        ## summarised raw data
+        counts <- function(CH) {
+            ## for single-session CH
+            if (nrow(CH)==0) { ## 2015-01-24
+                if (sighting(traps(CH))) 
+                    c(n = 0, ndet = 0, nmov = 0, dpa = 0,
+                      unmarked=0, nonID = 0, nzero = 0) 
+                else
+                    c(n=0, ndet=0, nmov=0, dpa = NA)
+            }
+            else {
+                n <- nrow(CH)
+                ndet <- sum(abs(CH)>0)
+                r <- ndet - n
+                nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+                ## detectors per animal
+                dpa <- if (length(dim(CH)) == 2)
+                    mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+                else
+                    mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+                if (sighting(traps(CH))) {
+                    unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
+                    nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
+                    nzero <- sum(apply(abs(CH),1,sum) == 0)
+                    c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
+                      unmarked=unmarked, nonID = nonID, nzero = nzero)
+                }
+                else
+                    c(n=n, ndet=ndet, nmov=nmoves, dpa = dpa, rse = sqrt(1/n + 1/r))
+            }
+        }
+        if (ms(x))
+            unlist(lapply(x, counts))
+        else {
+            gp <- covariates(x)$group
+            if (is.null(gp))
+                counts(x)
+            else
+                unlist(lapply(split(x,gp,dropnullocc=TRUE), counts))
+        }
+    }
+    else if (inherits(x,'secr') & (!is.null(x$fit))) {
+        ## fitted model:
+        ## default predictions of 'real' parameters
+        out <- predict(x)
+        if (is.data.frame(out))
+            out
+        else {
+            warning ("summarising only first session, group or mixture class")
+            out[[1]]
+        }
+    }
+    else
+        ## null output: dataframe of 0 rows and 0 columns
+        data.frame()
+}
+```
+
+# Appendix 2. Examples {#appendix2}
 
 Here we give some annotated examples of simulation code and selected
 output. Running this code with reduced `nrepl`, and viewing the
@@ -977,7 +1008,7 @@ output, will give you an idea of how `secrdesign` works.
 ## Multiple grids, varying number of occasions
 
 This is the example from the main text, slightly extended
-```{r, eval = FALSE}
+```{r Ex4, cache = TRUE}
 traps4 <- list(grid6x6 = make.grid(6,6),
                grid8x9 = make.grid(8,9),
                grid12x12 = make.grid(12,12))
@@ -987,18 +1018,18 @@ scen4 <- make.scenarios (trapsindex = 1:3, noccasions = c(8,4,2), D = 5,
 sims4 <- run.scenarios(nrepl = 500, trapset = traps4, scenarios =
      scen4, fit = FALSE, ncores = 3)
 ```
-```{r, eval = TRUE}
+```{r Ex4Sum, cache = TRUE}
 class(sims4)        ## just peeking
 find.stats(sims4)   ## just peeking
 summary(sims4)
 ```
-```{r, eval = FALSE}
-par(mfrow=c(4,3))
+```{r Ex4Plt, eval = FALSE, fig.width = 8, fig.height = 8}
+par(mfrow = c(4,3), cex=0.8, mgp=c(2.2,0.6,0))
 plot(sims4, statistic = "n", breaks = seq(0,80,5))      ## animals
 plot(sims4, statistic = "nmov", breaks = seq(0,140,5))  ## movements
 ```
-```{r, eval=FALSE, echo=FALSE}
-png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig4.png',
+```{r Ex4png, eval=makepng, echo=FALSE}
+png(file='d:/density secr 3.1/secrdesign/vignettes/secrdesign-fig4.png',
     width = 850, height = 800)
 par(mfrow = c(4,3), cex=1)
 plot(sims4, statistic = "n", breaks = seq(0,80,5))  ## number of animals
@@ -1010,11 +1041,11 @@ dev.off()
 
 **Fig. 4.** Numbers of individuals (n) and movements (nmov) from six scenarios differing in trap number, number of sampling occasions and scale of movement. 
 
-##Learned trap response
+## Learned trap response
 
 Here we assess the bias in $\hat D$ caused by ignoring a learned trap response.
 
-```{r,eval = FALSE}
+```{r Ex5, cache = TRUE}
 ## set up and run simulations
 traps5 <- list(grid6x6 = make.grid(6,6),
                grid10x10 = make.grid(10,10))
@@ -1024,14 +1055,13 @@ sims5 <- run.scenarios(nrepl = 500, trapset = traps5, scenarios =
     scen5, fit = TRUE, fit.args = list(list(model = g0 ~ 1),
     list(model = g0 ~ b)), ncores = 6)
 ```
-```{r, eval = TRUE}
-## select statistics and throw out any replicates with SE > 100
-## (there is one -- see reduced n in output for scenario 11)
+```{r Ex5Sum}
+## select statistics and throw out any replicates with SE > 100, if any
 stats5 <- select.stats(sims5)
 stats5 <- validate(stats5, "SE.estimate", c(0,100), "all")
 sum5 <- summary(stats5, fields = c("n","mean","se","lcl","ucl", "median"))
 ```
-```{r, eval = FALSE}
+```{r Ex5Plt}
 ## plot
 plot(c(0.5,6.5), c(-0.2,0.4), type = "n", xlab = "Scenario", ylab = "RB(D-hat)")
 for (i in 1:12) {
@@ -1043,40 +1073,22 @@ for (i in 1:12) {
 abline(h = 0, col="red")
 text(c(1.5,3.5,5.5), rep(0.38,3), paste("recapfactor", c(0.5,1,2), sep = " = "))
 ```
-
-```{r, eval = FALSE, echo=FALSE}
-## plot
-png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig5.png',
-    width = 850, height = 500)
-par(mar = c(4,4,1,1), cex = 1.4)
-plot(c(0.5,6.5), c(-0.2,0.4), type = "n", xlab = "Scenario", ylab = "RB(D-hat)")
-for (i in 1:12) {
-    xv <- if (i<=6) i else (i-6)+0.05
-    segments (xv, sum5$OUTPUT[[i]]["RB","lcl"], xv, sum5$OUTPUT[[i]]["RB","ucl"])
-    ptcol <- if (i<=6) "white" else "black"
-    points(xv, sum5$OUTPUT[[i]]["RB","mean"], pch = 21, bg = ptcol)
-}
-abline(h = 0, col="red")
-text(c(1.5,3.5,5.5), rep(0.38,3), paste("recapfactor", c(0.5,1,2), sep = " = "))
-dev.off()
-```
-\setkeys{Gin}{height=90mm, keepaspectratio=true}
-![fig5][fig5]
 
 **Fig. 5** Relative bias of SECR density estimate from null model
     (filled circles) and g0$\sim$b model (open circles) when
     data were generated with negative, zero, or positive learned response.
+\vspace{16pt}
 
-```{r, eval = TRUE}
+```{r Ex5Out, eval = TRUE}
 ## look at extended output
 sum5
 ```
 
-##Non-uniform possums
+## Non-uniform possums
 
 Code to illustrate the use of homogeneous and inhomogeneous density models.
 
-```{r, eval = FALSE}
+```{r Ex6, cache = TRUE}
 
 ## add covariates to builtin secr object possummask
 ## D1 is homogeneous density
@@ -1108,7 +1120,7 @@ poplist <- list(list(model2D = "IHP", D = "D1"),
 sims6 <- run.scenarios (500, scen6, traps(possumCH), possummask,
     pop.args = poplist)
 ```
-```{r, eval = TRUE}
+```{r Ex6Sum}
 summary(sims6)
 ```
 
@@ -1117,12 +1129,12 @@ use `fit = FALSE` (the default), `det.args = list(savepopn = TRUE)`,
 and save the entire capthist object (`extractfn = identity`). Here we
 create a single replicate.
 
-```{r,eval = FALSE}
+```{r Ex6a}
 sims6a <- run.scenarios (1, scen6, traps(possumCH), possummask,
     pop.args = poplist, det.args = list(savepopn = TRUE),
     extractfn = identity)
 ```
-```{r, eval = FALSE}
+```{r Ex6apl, eval = TRUE, fig.width=8.5, fig.height = 4}
 ## sims6a$output is now a list (one component per scenario) of lists
 ## (one component per replicate) of simulated capthist objects, each
 ## with its 'popn' object embedded as an attribute
@@ -1137,41 +1149,25 @@ plot(possummask, covariate = 'D2', dots = FALSE, breaks = 0:6)
 plot(traps(possumCH), detpar = list(col = 'green', pch = 15), add = TRUE)
 plot(pop2, frame = FALSE, add = TRUE, col = "blue", pch = 16, cex = 0.6)
 ```
-```{r, eval = FALSE}
+```{r Ex6aIn, eval = FALSE}
 ## click on map to display height; Esc to exit
 spotHeight(possummask, prefix = "D2")
 ```
-```{r, eval = FALSE}
-pop1 <- attr(sims6a$output[[1]][[1]], "popn")
-pop2 <- attr(sims6a$output[[2]][[1]], "popn")
-png(file='d:/density secr 2.10/secrdesign/vignettes/secrdesign-fig6.png',
-    width=850, height=400)
-par(mfrow = c(1,2), mar=c(1,1,1,6), cex=1.25)
-plot(possummask, covariate = "D1", dots = FALSE, breaks = 0:6)
-plot(traps(possumCH), detpar = list(col = 'green', pch = 15), add = TRUE)
-plot(pop1, frame = FALSE, add = TRUE, col = "blue", pch = 16, cex = 0.6)
-plot(possummask, covariate = 'D2', dots = FALSE, breaks = 0:6)
-plot(traps(possumCH), detpar = list(col = 'green', pch = 15), add = TRUE)
-plot(pop2, frame = FALSE, add = TRUE, col = "blue", pch = 16, cex = 0.6)
-dev.off()
-```
-
-\setkeys{Gin}{height=90mm, keepaspectratio=true, trim = 5mm 5mm 5mm 10mm, clip=true}
-![IHPpossums][fig6]
 
 **Fig. 6.** Simulated homogeneous (left) and inhomogeneous (right)
     distributions of brushtail possums at Waitarere, New
     Zealand. Traps in green (each hollow grid 180 m square).
     
     
-##Code for linear habitat
+## Code for linear habitat
 
 Code to illustrate the use of linear habitat models. This assumes you
-have the package **secrlinear**, which is not yet on CRAN.
+have the package **secrlinear**. Some warnings and messages are suppressed.
 
-```{r, eval = FALSE}
+```{r Ex7, warning = FALSE, message = FALSE}
 library(secrlinear)
-
+```
+```{r Ex7con, cache = TRUE}
 ## create a habitat geometry
 x <- seq(0, 4*pi, length = 200)
 xy <- data.frame(x = x*100, y = sin(x)*300)
@@ -1200,18 +1196,19 @@ sims7 <- run.scenarios(nrepl = 500, trapset = trplist,
     maskset = linmask, det.args = list(det.arg),
     scenarios = scen7, seed = 345, fit = FALSE)
 ```
-```{r, eval = TRUE}
+```{r Ex7Sum}
 summary(sims7)
 ```
 
-##Grouped populations
+## Grouped populations
 
 This example demonstrates the simulation of a structured population - nominally females and males with a 2:1 sex ratio.
 
 First we form a scenarios dataframe with 2 groups and two levels of 'noccasions', and manually adjust the 'male' parameter values:
 
-```{r, eval = TRUE}
-scen8 <- make.scenarios (D = 8, g0 = 0.3, sigma = 30, noccasions = c(4,8), groups = c('F','M'))
+```{r Ex8, cache = TRUE}
+scen8 <- make.scenarios (D = 8, g0 = 0.3, sigma = 30, noccasions = c(4,8), 
+                         groups = c('F','M'))
 male <- scen8$group == 'M'
 scen8$D[male] <- 4
 scen8$g0[male] <- 0.2
@@ -1220,7 +1217,7 @@ scen8[,1:8]
 ```
 
 Next we set up a trapping grid, a habitat mask, and a customized extract function for multi-class output from a hybrid mixture model:
-```{r, eval = TRUE}
+```{r Ex8Con, cache = TRUE}
 grid <- make.grid(8, 8, spacing = 30)
 mask <- make.mask(grid, buffer = 160, type = 'trapbuffer')
 ## extracts total density and proportion from output for the first group (F)
@@ -1233,36 +1230,27 @@ exfn <- function(x) {
 }
 ```
 It is desirable to check the raw simulations. We specify the mask, rather than relying on one constructed automatically, to ensure the same mask is used for both females and males.
-```{r, eval = 2}
+```{r Ex8Raw, cache = TRUE}
 raw8 <- run.scenarios(20, scen8, trapset = list(grid), fit = FALSE, maskset = list(mask))
 summary(raw8)
 ```
-Now fit the models and check the summary output for density ('D') and sex ratio (proportion female 'pmix') without repeating the header information.
-```{r, eval = FALSE}
+Now fit the models...
+```{r Ex8Fit, cache = TRUE}
 sims8 <- run.scenarios(20, scen8, trapset = list(grid), fit = TRUE, extractfn = exfn,
                        fit.args = list(model = list(g0~h2, sigma~h2), hcov = 'group'),
-                       maskset = list(mask))
+                       maskset = list(mask), ncores = 4, byscenario = FALSE)
 ```
-
-```{r, eval = TRUE}
+... and check the summary output for density ('D') and sex ratio (proportion female 'pmix') without repeating the header information:
+```{r Ex8Sum, cache = TRUE}
 summary(select.stats(sims8,'D'))$OUTPUT
 summary(select.stats(sims8,'pmix'))$OUTPUT
 ```
 
-```{r, eval = FALSE, echo = FALSE}
-save(sims1, sims2, 
-     file = 'd:/density secr 2.10/secrdesign/vignettes/runsims1.RData')
-```
-```{r, eval = FALSE, echo = FALSE}
-save(raw3, sims3, sims4, sims5, sims6, sims6a, sims7, raw8, sims8,
-     file = 'd:/density secr 2.10/secrdesign/vignettes/runsims2.RData')
-```
 [fig1]:secrdesign-fig1.png
 [fig2]:secrdesign-fig2.png
 [fig3]:secrdesign-fig3.png
 [fig4]:secrdesign-fig4.png
-[fig5]:secrdesign-fig5.png
-[fig6]:secrdesign-fig6.png
+
 
 [^1]:the full class is actually c(x, "secrdesign"", "list") where x is as described.
 

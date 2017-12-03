@@ -7,15 +7,17 @@
 \title{Spatially Explicit Capture--Recapture Study Design }
 
 \description{
+
 Tools to assist the design of spatially explicit capture--recapture studies of animal populations.
+
 }
 
 \details{
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.5.2\cr
-Date: \tab 2017-10-10\cr
+Version: \tab 2.5.3\cr
+Date: \tab 2017-12-04\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -45,6 +47,7 @@ Other functions not used exclusively for simulation are:
   \code{\link{Enrm}} \tab expected numbers of individuals \eqn{n}, re-detections \eqn{r} and movements \eqn{m} \cr
   \code{\link{minnrRSE}} \tab approximate RSE(D-hat) given sample size (\eqn{n}, \eqn{r}) \cr
   \code{\link{costing}} \tab compute various cost components \cr
+  \code{\link{saturation}} \tab expected detector saturation (trap success) \cr
   \code{\link{scenarioSummary}} \tab applies \code{Enrm}, \code{minnrRSE}, and other summaries to each scenario in a dataframe \cr
   \code{\link{optimalSpacing}} \tab optimal detector spacing by rule-of-thumb and simulation RSE(D-hat)\cr
   \code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr

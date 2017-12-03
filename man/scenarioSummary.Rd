@@ -52,6 +52,7 @@ A dataframe including the first 8 columns from scenarios and the computed column
 \item{arrayN}{number of detectors in each array}
 \item{arrayspace}{array spacing in sigma units}
 \item{arrayspan}{largest dimension of array in sigma units}
+\item{saturation}{expected proportion of detectors at which detection occurs (trap success)}
 \item{travel}{travel cost}
 \item{arrays}{cost of each repeated array}
 \item{detectors}{fixed cost per detector}

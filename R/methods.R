@@ -48,20 +48,32 @@ coef.fittedmodels <- function (object, ...) {
     object
 }
 
-derived.SL <- function (object, ...) {
-    if (!inherits(object,'fittedmodels'))
-        stop ("require fitted secr models")
-    output <- lapply(object$output, lapply, derived, ...)
+derived.fittedmodels <- function (object, ...) {
+    if (! ('mask' %in% names(object$output[[1]][[1]])))
+        stop ("fitted model did not retain mask")
+    if (! ('design0' %in% names(object$output[[1]][[1]])))
+        stop ("fitted model did not retain design0")
+    derfn <- function(xlist) {
+        class (xlist) <- 'secrlist'
+        derived(xlist, ...)
+    }
+    output <- lapply(object$output, derfn)
     object$output <- output
     object$outputtype <- 'derived'
     class(object) <- c('estimatetables', 'secrdesign', 'list')
     object
 }
 
-regionN.SL <- function (object, ...) {
-    if (!inherits(object,'fittedmodels'))
-        stop ("require fitted secr models")
-    output <- lapply(object$output, lapply, region.N, ...)
+region.N.fittedmodels <- function (object, ...) {
+    if (! ('mask' %in% names(object$output[[1]][[1]])))
+        stop ("fitted model did not retain mask")
+
+    rNfn <- function(xlist) {
+        class (xlist) <- 'secrlist'
+        region.N(xlist, ...)
+    }
+    output <- lapply(object$output, rNfn)
+
     ra <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
     object$output <- output
     object$outputtype <- 'regionN'
@@ -69,6 +81,28 @@ regionN.SL <- function (object, ...) {
     class(object) <- c('estimatetables', 'secrdesign', 'list')
     object
 }
+
+# derived.SL <- function (object, ...) {
+#     if (!inherits(object,'fittedmodels'))
+#         stop ("require fitted secr models")
+#     output <- lapply(object$output, lapply, derived, ...)
+#     object$output <- output
+#     object$outputtype <- 'derived'
+#     class(object) <- c('estimatetables', 'secrdesign', 'list')
+#     object
+# }
+
+# regionN.SL <- function (object, ...) {
+#     if (!inherits(object,'fittedmodels'))
+#         stop ("require fitted secr models")
+#     output <- lapply(object$output, lapply, region.N, ...)
+#     ra <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
+#     object$output <- output
+#     object$outputtype <- 'regionN'
+#     attr(object, 'regionsize') <- ra    ## one per scenario
+#     class(object) <- c('estimatetables', 'secrdesign', 'list')
+#     object
+# }
 
 ## need to handle args that are function or large userdist matrix
 ## 2014-11-12, 23

@@ -30,7 +30,6 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
         stop ("cannot select.stats output of unknown type")
     if (object$outputtype == 'secrfit')
         stop ("cannot select.stats secr fit - use predict() first")
-
     #if (missing(estname) | missing(SEname)) {
     estname <- ""
     SEname <- ""
@@ -61,7 +60,7 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     }
     if (any(stat2 %in% c('true','RB','RSE','COV','ERR')) & (estname == '')) {
         stat2 <- character(0)
-        warning ("cannot compute requested statistics with your data")
+        warning ("cannot compute all requested statistics with your data")
     }
 
     extractfn <- function (out, true, estimated) {
@@ -139,9 +138,12 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     else if (object$outputtype %in% c('predicted','derived')){
         if (parameter == 'D')
             true <- trueD
-        else
-            ## true <- object$scenarios[,parameter]
-            true <- sapply(splitScenarios, weighted, parameter)
+        else {
+            if (parameter %in% names(object$scenarios))  # 2017-11-03
+                true <- sapply(splitScenarios, weighted, parameter)
+            else
+                true <- NA
+        }
     }
     else true <- NA
 }

@@ -1,3 +1,18 @@
+Changes in version 2.5.3 (2017-12-04)
+
+New features or changed behaviour of old functions
+    o   saturation() new function for expected detector saturation (trap success)
+    o   scenarioSummary() reports average expected detector saturation
+    o   derived.SL() and regionN.SL() replaced by methods for generic functions
+        derived and region.N (see 'secr')
+
+Bugs fixed
+    o   Enrm() etc. detectfn 'HAN' and 'HCG' failed
+
+Other
+    o   tweak to select.stats to allow parameters without true value in scenarios
+    o   depends on secr >= 3.1.2
+
 Changes in version 2.5.2 (2017-10-10)
 
 Other
