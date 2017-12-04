@@ -16,8 +16,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.5.3\cr
-Date: \tab 2017-12-04\cr
+Version: \tab 2.5.4\cr
+Date: \tab 2017-12-05\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -40,8 +40,6 @@ The simulation functions in \pkg{secrdesign} are:
   each scenario \cr 
 }
 
-Documentation for simulation functions is provided in a vignette \url{../doc/secrdesign-vignette.pdf}. An Appendix has code for various examples that should help get you started. 
-
 Other functions not used exclusively for simulation are:
 \tabular{ll}{
   \code{\link{Enrm}} \tab expected numbers of individuals \eqn{n}, re-detections \eqn{r} and movements \eqn{m} \cr
@@ -52,6 +50,9 @@ Other functions not used exclusively for simulation are:
   \code{\link{optimalSpacing}} \tab optimal detector spacing by rule-of-thumb and simulation RSE(D-hat)\cr
   \code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr
 }
+
+
+A vignette documenting the simulation functions is available at \href{http://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}. An Appendix in that vignette has code for various examples that should help get you started. 
 
 Documentation for expected counts is in \href{http://www.otago.ac.nz/density/pdfs/secrdesign-Enrm.pdf}{secrdesign-Enrm.pdf}. Another vignette \href{http://www.otago.ac.nz/density/pdfs/secrdesign-tools.pdf}{secrdesign-tools.pdf} demonstrates other tools. These include the \code{optimalSpacing} function, for finding the detector spacing that yields the greatest precision for a given detector geometry, number of sampling occasions, density and detection parameters.
 
