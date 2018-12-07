@@ -30,7 +30,7 @@ scenarioSummary(scenarios, trapset, maskset, xsigma = 4, nx = 64, CF = 1.0,
 
 Not all scenarios from \code{make.scenarios()} are suitable. Grouped (multi-line) scenarios are excluded. Hazard detection functions are preferred (`HHN', `HHR', `HEX', `HAN', `HCG'). `HN', `HR' and `EX' are converted approximately to `HHN', `HHR' and `HEX' respectively, with a warning; other functions are rejected.
 
-\code{CF} may be a vector of values that is recycled across the components of \code{trapset}.
+\code{CF} may be a vector of values that is recycled across the components of \code{trapset}. The correction factor is a multiplier applied after all other calculations.
 
 The approximate RSE(D-hat) is rotRSE = CF/ sqrt(min(E(n), E(r))). This assumes n is Poisson-distributed. For binomial n an ad hoc adjustment is rotRSEB = sqrt(rotRSE^2 - 1 / (D x A)) where A is the mask area.
 
@@ -59,8 +59,9 @@ A dataframe including the first 8 columns from scenarios and the computed column
 \item{visits}{cost per detector per visit}
 \item{detections}{cost per detection }
 \item{totalcost}{summed costs}
+\item{detperHR}{median number of detectors per 95\% home range}
   
-Costings (the last 6 columns) are omitted if \code{costing = FALSE}.
+Costings (the last 6 columns) are omitted if \code{costing = FALSE}. 
 
 }
 

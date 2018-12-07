@@ -9,9 +9,10 @@
 
 optimalSpacing (D, traps, detectpar, noccasions, nrepeats = 1, 
     detectfn = c('HHN', 'HHR', 'HEX','HAN','HCG', 'HN', 'HR', 'EX'),
-    fittedmodel = NULL, xsigma = 4, 
-    R = seq(0.2, 4, 0.2), CF = 1.0,
-    simulationR = seq(0.4,4,0.4), nrepl = 0, 
+    fittedmodel = NULL, xsigma = 4, R = seq(0.2, 4, 0.2), CF = 1.0,
+    distribution = c("poisson", "binomial"),
+    fit.function = c("none", "openCR.fit", "secr.fit"), 
+    simulationR = seq(0.4, 4, 0.4), nrepl = 10, 
     plt = FALSE, ...) 
 }
 
@@ -27,8 +28,10 @@ optimalSpacing (D, traps, detectpar, noccasions, nrepeats = 1,
   \item{xsigma}{numeric buffer width as multiple of sigma}
   \item{R}{numeric vector of relative spacings at which to plot rule-of-thumb RSE(D-hat)}
   \item{CF}{numeric correction factor for rule-of-thumb RSE}
+  \item{distribution}{character distribution of number of individuals detected}
+  \item{fit.function}{character function to use for model fitting}
   \item{simulationR}{numeric vector of relative spacings at which to simulate}
-  \item{nrepl}{integer number of replicate simulations (default no simulations)}
+  \item{nrepl}{integer number of replicate simulations }
   \item{plt}{logical; if TRUE then results are plotted}
   \item{\dots}{other arguments passed to various functions (see Details)}
   
@@ -42,7 +45,7 @@ A numerical search over possible spacings uses the rule-of-thumb RSE(D-hat) give
 
 The computation emulates variation in detector spacing by inverse variation in sigma (sigma' = sigma / R) with compensating variation in density. Mask buffer width and spacing are also scaled by R.
 
-If \code{nrepl} is greater than zero then simulations are also performed for the relative spacings in \code{simulationR}. Density, sigma and mask attributes are scaled as for the rule-of-thumb calculations. Using `method = "none"` gives fast prediction of RSE (from the Hessian evaluated at the known parameter values), but does not estimate bias.
+If \code{fit.function} is not "none" then simulations are also performed for the relative spacings in \code{simulationR}. Density, sigma and mask attributes are scaled as for the rule-of-thumb calculations. Using `method = "none"` gives fast prediction of RSE (from the Hessian evaluated at the known parameter values), but does not estimate bias.
 
 The \dots argument may be used to set the values of these arguments:
 
@@ -53,7 +56,7 @@ run.scenarios \tab `seed', `ncores', `method' \cr
 plot.optimalSpacing \tab `add', \dots \cr
 }
 
-The argument \code{CF} may be set to NA to suppress rule-of-thumb RSE, including optimisation. The value of argument \code{R} has no effect on optimisation.
+The argument \code{CF} may be set to NA to suppress rule-of-thumb RSE, including optimisation. \code{range(R)} specifies the search interval for optimisation.
 
 A \code{plot} method is provided, with options for plotting different components.
 

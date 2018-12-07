@@ -25,6 +25,17 @@ costing <- function(traps, nr, noccasions, unitcost = list(), nrepeats = 1, rout
     c(costs, totalcost = sum(costs))
 }
 
+trapsperHR <- function(traps, r) {
+    mask <- make.mask(traps, buffer = r)
+    d <- edist(mask, traps)
+    nt <- apply(d, 1, function(x) sum(x<=r))
+    nt <- nt[nt>0]
+    c(median = median(nt), max = max(nt))
+}
+# 
+# trapsperHR (gr, circular.r(p = 0.95, detectfn = 'HHN', sigma = 20))
+# trapsperHR (gr, circular.r(p = 0.95, detectfn = 'HEX', sigma = 20))
+
 scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,   
                              CF = 1.0, costing = FALSE, ..., ncores = 1) {
     ## mainline
@@ -181,9 +192,15 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
                         scenario$noccasions, detectfn = detectfn)
         else
             nrm <- c(En=NA,Er=NA,Em=NA)
-        rotRSE <- scenario$CF / sqrt(min(nrm[1:2]))
-        rotRSEB <- (rotRSE^2 - 1 / (scenario$D * maskarea(mask)))^0.5
         
+        ## 2018-06-11
+        nrm <- nrm * scenario$nrepeats
+        esa <- esa * scenario$nrepeats
+        
+        rotRSE <- 1 / sqrt(min(nrm[1:2]))
+        rotRSEB <- (rotRSE^2 - 1 / (scenario$D * scenario$nrepeats * maskarea(mask)))^0.5 * scenario$CF
+        rotRSE <- rotRSE * scenario$CF
+
         out <- c(scenario[1:8], round(nrm,3))
 
         out <- c(out, 
@@ -217,6 +234,9 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
             out <- c(out, do.call('costing', arg))
         }
 
+        radius <- circular.r(p = 0.95, detectfn = detectfn, sigma = detectpar$sigma)
+        out$detperHR <- trapsperHR (traps, radius)[1]  ## median detectors per 95% HR
+        
         if (extrafields) {
             out <- c(out,
                      detperHR(traps, mask, detectfn = scenario$detectfn, detectpar, 

@@ -1,11 +1,16 @@
-importFrom (abind, abind)
-importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
-           "plot", "points", "segments", "legend")
-importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",
-           "terms", "uniroot", "optimize", "approx", "dist")
-importFrom("utils", "flush.console", "packageDescription", "packageVersion")
 import (parallel)
 import (secr)
+
+importFrom ("abind", "abind")
+importFrom ("openCR", "runsim.spatial", "sumsims", "openCR.fit")
+importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
+           "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
+importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",
+           "terms", "uniroot", "optimize", "approx", "dist", "pnorm", "symnum",
+           "median")
+importFrom("utils", "flush.console", "packageDescription", "packageVersion")
+importFrom("grDevices", "topo.colors")
+
 export (make.scenarios)
 export (scenariosFromStatistics)
 export (run.scenarios)

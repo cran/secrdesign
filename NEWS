@@ -1,3 +1,19 @@
+Changes in version 2.5.5 (2018-12-07)
+
+New features or changed behaviour of old functions
+    o   optimalSpacing() new argument 'fit.function' to select openCR.fit/secr.fit
+    o   optimalSpacing() new argument 'distribution'
+    o   optimalSpacing() adjusts rotRSE for binomial distribution of n
+    o   plot.optimalSpacing() does not plot optimum
+    o   summarySpacing() calculates detectors per home range
+
+Bugs fixed
+    o   run.scenarios() tripped up on multi-session simulation
+    o   summaryScenarios() mostly ignored nrepeats
+
+Other
+    o   imports from openCR
+
 Changes in version 2.5.4 (2017-12-05)
 
 New features or changed behaviour of old functions

@@ -166,8 +166,9 @@ argdf <- function (args) {
             # tmp0[i,names(tmp[[i]])] <- tmp[[i]]
             ## tmp0[i,names(tmp[[i]])] <- unlist(tmp[[i]])
             ## adhoc 2017-05-26
-            for (j in 1: length(tmp[[i]]))
+            for (j in 1: length(tmp[[i]])) {
                 tmp0[i,names(tmp[[i]])[j]] <- unlist(tmp[[i]][j])[1]
+            }
         }
         ## as.data.frame(t(unlist(tmp0)))  ## but this fails! 2015-11-03
         as.data.frame(tmp0)

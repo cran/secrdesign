@@ -28,8 +28,8 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
         stop ("select.stats requires input of class estimatetables")
     if (is.na(object$outputtype))
         stop ("cannot select.stats output of unknown type")
-    if (object$outputtype == 'secrfit')
-        stop ("cannot select.stats secr fit - use predict() first")
+    if (object$outputtype %in% c('secrfit', 'openCRfit'))
+        stop ("cannot select.stats from fitted model - use predict() first")
     #if (missing(estname) | missing(SEname)) {
     estname <- ""
     SEname <- ""

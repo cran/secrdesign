@@ -28,7 +28,7 @@ Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
 parameter values for a particular scenario. The first estimates the
 parameter values and their standard errors from each dataset by
-maximizing the full likelihood, as usual in \code{secr.fit}. The second
+maximizing the full likelihood, as usual in \code{secr.fit} of \code{openCR.fit}. The second
 takes the short cut of computing variances and SE from the Hessian
 estimated numerically at the known expected values of the parameters,
 without maximizing the likelihood. Set \code{method = "none"} for this
@@ -39,11 +39,13 @@ shortcut.
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, det.args, fit = FALSE, fit.args, chatnsim, extractfn = NULL, 
-    multisession = FALSE, ncores = 1, byscenario = TRUE, seed = 123, ...)
+    pop.args, det.args, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"), 
+    fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
+    ncores = 1, byscenario = TRUE, seed = 123, ...)
 
-fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
-    ncores = 1, byscenario = TRUE, scen, repl, ...)
+fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"), 
+    fit.args, chatnsim, extractfn = NULL, ncores = 1, byscenario = TRUE,
+    scen, repl, ...)
 }
 
 \arguments{
@@ -61,6 +63,7 @@ fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
   \code{\link[secr]{sim.capthist}} (optional)} 
   \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
   data are generated but no model is fitted}
+  \item{fit.function}{character name of function to use for model fitting}
   \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
@@ -107,7 +110,7 @@ fit.models(rawdata, fit = FALSE, fit.args, chatnsim, extractfn = NULL,
   From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
 
   The L'Ecuyer pseudorandom generator is used with a separate random
-  number stream for each core (see \code{\link[parallel]{clusterSetRNGStream}}).
+  number stream for each core (see \code{\link{clusterSetRNGStream}}).
   
   A summary method is provided (see
   \code{\link{summary.secrdesign}}). It is usually necessary to process

@@ -67,8 +67,8 @@ done either in \code{run.scenarios} or in \code{region.N}.
   \code{\link{run.scenarios}}
   \code{\link[secr]{coef.secr}}
   \code{\link[secr]{predict.secr}}
-  \code{\link[secr]{derived.secr}}
-  \code{\link[secr]{region.N.secr}}
+  \code{\link{derived.secr}}
+  \code{\link{region.N.secr}}
 }
 
 \examples{
