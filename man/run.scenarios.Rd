@@ -61,12 +61,12 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
   \code{\link[secr]{sim.popn}} (optional)} 
   \item{det.args}{list of named arguments to
   \code{\link[secr]{sim.capthist}} (optional)} 
-  \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
+  \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit} or \code{openCR.fit}, otherwise
   data are generated but no model is fitted}
   \item{fit.function}{character name of function to use for model fitting}
   \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
-  \item{extractfn}{function to extract a vector of statistics from secr model}
+  \item{extractfn}{function to extract a vector of statistics from secr or openCR model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
   \item{ncores}{integer number of cores for parallel processing}
   \item{byscenario}{logical; if TRUE and ncores>1 then scenarios are sent to different cores}
@@ -106,6 +106,8 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
   Examples. Replacement functions should follow this pattern i.e. test
   for whether the single argument is an secr object, and if not supply a
   named vector of NA values of the correct length.
+  
+  Using \code{extractfn = summary} has the advantage of allowing both model fits and raw statistics to be extracted from one set of simulations. However, this approach requires an additional step to retrieve the desired numeric results from each replicate (see \code{\link{count.summary}} and \code{\link{predict.summary}}).
 
   From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
 
@@ -162,10 +164,6 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
   
 }
 
-%\references{
-%Efford, M. G. in prep. Design of spatially explicit capture--recapture studies.
-%}
-
 \note{
 
 For \code{ncores > 1} it pays to keep an eye on the processes from the
@@ -187,6 +185,8 @@ Murray Efford
   \code{\link{select.stats}},
   \code{\link{summary.secrdesign}},
   \code{\link{summary.selectedstatistics}},
+  \code{\link{count.summary}},
+  \code{\link{predict.summary}},
   \code{\link[secr]{sim.popn}},
   \code{\link[secr]{sim.capthist}},
   \code{\link[secr]{secr.fit}}

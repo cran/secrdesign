@@ -390,6 +390,10 @@ getoutputtype <- function (output) {
             'secrfit'
         else if (inherits(typical, 'openCR'))
             'openCRfit'
+        else if (inherits(typical, 'summary.secr'))
+            'secrsummary'
+        else if (inherits(typical, 'summary.openCR'))
+            'openCRsummary'
         else if (inherits(typical, 'data.frame')) {
             if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
                     any(c('R.N','E.N') %in% rownames(typical)))
@@ -421,6 +425,8 @@ getoutputclass <- function (outputtype) {
             regionN = c("estimatetables", 'secrdesign', 'list'),
             coef = c("estimatetables", 'secrdesign', 'list'),
             user = c("estimatetables", 'secrdesign', 'list'),
+            secrsummary = c("summary", 'secrdesign', 'list'),
+            openCRsummary = c("summary", 'secrdesign', 'list'),
             capthist = c("rawdata", 'secrdesign', 'list'),
             selectedstatistics = c("selectedstatistics", 'secrdesign', 'list'),
             list      ## otherwise

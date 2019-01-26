@@ -49,9 +49,11 @@ getrotRSE <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats,
                         noccasions = noccasions, detectfn = detectfn, CF = 1.0)
     
     if (distribution == "binomial") {
-        Pxy <- pdot(mask, traps, detectfn, detectpar, noccasions)
-        esa <- sum(Pxy) * attr(mask, 'area')
-        rotRSE <- sqrt(rotRSE^2 - 1 / (tmpD * maskarea(mask)))
+        # 2019-01-08 blocked as doesn't seem to do anything
+        # Pxy <- pdot(mask, traps, detectfn, detectpar, noccasions)
+        # esa <- sum(Pxy) * attr(mask, 'area')
+        # 2019-01-08 inserted * nrepeats 
+        rotRSE <- sqrt(rotRSE^2 - 1 / (tmpD * nrepeats * maskarea(mask)))
     }
     c(R, nrm, rotRSE*CF)
 }
@@ -276,10 +278,10 @@ plot.optimalSpacing <- function (x, add = FALSE, plottype = c("RSE", "nrm"), ...
     if (!add) {
         maxy <- 0.5
         if (!all(is.na(y))) {
-            maxy <- max(y)*1.3
+            maxy <- max(y, na.rm = TRUE)*1.3
         }
-        maxx <- max(R)
-        minx <- min(R)
+        maxx <- max(R, na.rm = TRUE)
+        minx <- min(R, na.rm = TRUE)
         if (minx < 0.2 * (maxx-minx)) minx <- 0
         defaultargs <- list(x = 0, y = 0, type = "n", las = 1,
                             xlab = expression(paste("Spacing -  ", sigma, "  units")),

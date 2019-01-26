@@ -37,6 +37,11 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
         estname <- 'estimate'
         SEname <- 'SE.estimate'
     }
+    else if (object$outputtype %in% c('rawcounts')) {
+        estname <- 'n'
+        SEname <- 'r'
+        parameter <- 'Number'
+    }
     else if (object$outputtype == 'coef') {
         estname <- 'beta'
         SEname <- 'SE.beta'
@@ -51,7 +56,10 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     stat0 <- names(typical)[sapply(typical, is.numeric)]
     if (missing(statistics)) {
         stat1 <- stat0
-        stat2 <- c('RB','RSE','COV')
+        if (parameter == 'Number') 
+            stat2 <- character(0)
+        else
+            stat2 <- c('RB','RSE','COV')
         ## stat2 <- c('true','RB','RSE','COV','ERR')
     }
     else {

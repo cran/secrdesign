@@ -1,3 +1,19 @@
+Changes in version 2.5.6 (2019-01-26)
+
+New features or changed behaviour of old functions
+    o   make.scenarios() allows uniform (detectfn = 4)
+    o   count and predict methods for simulation objects inheriting from 'summary'
+    o   select.stats() respects count statistics
+
+Bugs fixed
+    o   plot.optimalSpacing() failed if any values missing (NA)
+    o   optimalSpacing() did not apply nrepeats when computing binomial rotRSE
+    o   scenarioSummary() failed with single-detector arrays
+
+Other
+    o   vignette removed (had been re-introduced by mistake in 2.5.5) 
+        (see www.otago.ac.nz/density/pdfs)
+
 Changes in version 2.5.5 (2018-12-07)
 
 New features or changed behaviour of old functions

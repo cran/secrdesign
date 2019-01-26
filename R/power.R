@@ -97,21 +97,23 @@ plotpower <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), ad
          alpha = alpha, targetpower = targetpower, lower=lower, upper = upper)
 }
 
-plotpowerCI <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), adjustRSE = FALSE, 
+plotpowerCI <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), 
+                         estimatedrange = effectrange, adjustRSE = FALSE, 
                        alpha = 0.05, effectincr = 0.02, col = topo.colors(8), plt = TRUE, 
                        add = FALSE, ...) {
     
     if (!add) {
-        plot(0,0, xlim = effectrange+1, ylim = effectrange+1, xaxs='i', yaxs='i', type='n', axes = FALSE,
+        plot(0,0, xlim = effectrange+1, ylim = estimatedrange+1, xaxs='i', yaxs='i', type='n', axes = FALSE,
              xlab = '', ylab = '')
-        lab <- preplus(seq(-100, effectrange[2]*100,50))
-        axis (1, at = seq(0,effectrange[2]+1, 0.5), labels = lab, las = 1)
-        axis (2, at = seq(0,effectrange[2]+1, 0.5), labels = lab, las = 1)
+        labx <- preplus(seq(-100, effectrange[2]*100,50))
+        laby <- preplus(seq(-100, estimatedrange[2]*100,50))
+        axis (1, at = seq(0,effectrange[2]+1, 0.5), labels = labx, las = 1)
+        axis (2, at = seq(0,estimatedrange[2]+1, 0.5), labels = laby, las = 1)
         mtext (side=1, line=2.5, 'Population change %')
         mtext (side=2, line=3, 'Estimated population change %')
         abline(v=1, lty=2)
         abline(h=1, lty=2)
-        abline(0,1, lty=2, col='blue')
+        # abline(0,1, lty=2, col='blue')
         box()
     }
     xval <- seq(effectrange[1], effectrange[2], effectincr) +1

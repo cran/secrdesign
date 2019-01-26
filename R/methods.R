@@ -104,6 +104,67 @@ region.N.fittedmodels <- function (object, ...) {
 #     object
 # }
 
+predict.summary <- function (object, ...) {
+    if (object$outputtype=='secrsummary') {
+        predicttable <- function(x) {
+            out <- x[['predicted']][,  c('estimate', 'SE.estimate','lcl','ucl')]
+            out
+        }
+    }
+    else {
+        predicttable <- function(x) {
+            ## take first session - a fudge that breaks if there is among-occasion model
+            predictlist <- lapply(x$predict, '[', 1, c('estimate', 'SE.estimate','lcl','ucl'))
+            out <- do.call(rbind, predictlist)
+            rownames(out) <- gsub('super', '', rownames(out))  # superD becomes D
+            out
+        }
+    }
+    output <- lapply(object$output, lapply, predicttable)
+    object$output <- output
+    object$outputtype <- 'predicted'
+    class(object) <- c('estimatetables', 'secrdesign', 'list')
+    object
+}
+
+coef.summary <- function (object, ...) {
+    output <- lapply(object$output, lapply, '[[', 'coef')
+    object$output <- output
+    object$outputtype <- 'coef'
+    class(object) <- c('estimatetables', 'secrdesign', 'list')
+    object
+}
+
+count <- function (object, ...) UseMethod("count")
+
+count.summary <- function(object, ...) {
+    stats <- c('Animals', 'Detections')
+    if (object$outputtype == "secrsummary") {
+        move <- if ('Moves' %in% names(object$output[[1]][[1]]$capthist)) 'Moves' else NULL
+        stats <- c(stats, move)
+        counttable <- function(x) {
+            out <- as.data.frame(t(x[['capthist']][stats]))
+            names(out) <- stats
+            rownames(out) <- 'Number'
+            out
+        }
+    }
+    else {
+        move <- if ('Moves' %in% rownames(object$output[[1]][[1]]$capthist)) 'Moves' else NULL
+        stats <- c(stats, move)
+        counttable <- function(x) {
+            out <- as.data.frame(t(x$capthist[stats, 'Number', drop = FALSE]))
+            names(out) <- stats
+            out
+        }
+    }
+    output <- lapply(object$output, lapply, counttable)
+    object$output <- output
+    object$outputtype <- 'rawcounts'
+    class(object) <- c('estimatetables', 'secrdesign', 'list')
+    object
+}
+
 ## need to handle args that are function or large userdist matrix
 ## 2014-11-12, 23
 

@@ -12,7 +12,9 @@ costing <- function(traps, nr, noccasions, unitcost = list(), nrepeats = 1, rout
     }
    
     if (is.null(routelength)) {
-        routelength <- spacing(traps) * (nrow(traps)-1) / 1000
+        spc <- spacing(traps)
+        if (is.null(spc)) spc <- 0   ## bug fix 2019-01-09
+        routelength <- spc * (nrow(traps)-1) / 1000
     }
     
     nocc <- noccasions + setupoccasion
@@ -43,7 +45,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    
     extrafields <- FALSE
     
     if (!all(as.character(scenarios$detectfn) %in% 
@@ -174,6 +175,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     ##---------------------------------------------------------------------------
     ##
     onescenario <- function (scenario) {
+
         traps <- trapset[[scenario$trapsindex]]
         mask <- maskset[[scenario$maskindex]]
         
@@ -247,11 +249,13 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         unlist(out)
     }
     ##---------------------------------------------------------------------------
-    
-    getspan <- function (traps) max(dist(traps))
+
+    ## tweaked 2019-01-09 for single-trap arrays
+    getspan <- function (traps) suppressWarnings(pmax(0, max(dist(traps))))
     spans <- unname(sapply(trapset, getspan))
     ntraps <- unname(sapply(trapset, nrow))
     spaces <- unname(sapply(trapset, spacing))
+    spaces <- sapply(spaces, function(x) if (is.null(x)) NA else x)  ## patch 2019-01-09
     
     if (is.null(scenarios$CF)) {
         if (length(CF) > length(trapset))

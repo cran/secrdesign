@@ -41,5 +41,10 @@ S3method (coef, fittedmodels)
 S3method (predict, fittedmodels)
 S3method (derived, fittedmodels)
 S3method (region.N, fittedmodels)
+# 2019
+export (count)
+S3method (count, summary)
+S3method (predict, summary)
+S3method (coef, summary)
 useDynLib (secrdesign, .registration = TRUE)
 
