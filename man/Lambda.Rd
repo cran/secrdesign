@@ -39,7 +39,7 @@ The calculation is based on an additive hazard model. If \code{detectfn} is not 
 
 For hazard function \eqn{\lambda(d)} and \eqn{S} occasions, we define \eqn{\Lambda(x) = \sum_s \sum_k \lambda(d_k(x))}{\Lambda = \sum over s \sum over k \lambda(d_k(x)) }.
 
-Formulae for expected counts are given in \href{http://www.otago.ac.nz/density/pdfs/secrdesign-Enrm.pdf}{secrdesign-Enrm.pdf}.
+Formulae for expected counts are given in \href{https://www.otago.ac.nz/density/pdfs/secrdesign-Enrm.pdf}{secrdesign-Enrm.pdf}.
 
 \code{minnrRSE} has mostly the same inputs as \code{Enrm} but returns sqrt(CF/min(n,r)). The correction factor CF may be used to adjust for systematic bias (e.g., for a line of detectors CF = 1.4 may be appropriate). The default \code{distribution = 'poisson'} is for Poisson-distributed \eqn{N} and \eqn{n}. To adjust the prediction for fixed \eqn{N} (binomial \eqn{n}) use \code{distribution = 'binomial'} (see \url{../doc/secrdesign-tools.pdf} Appendix 2).
 

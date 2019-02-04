@@ -1,3 +1,11 @@
+Changes in version 2.5.7 (2019-02-04)
+
+New features or changed behaviour of old functions
+    o  none
+
+Bugs fixed
+    o   count.summary() failed with fit.function = "openCR.fit"
+
 Changes in version 2.5.6 (2019-01-26)
 
 New features or changed behaviour of old functions

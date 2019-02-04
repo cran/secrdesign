@@ -1,11 +1,11 @@
-9df6f81ad87183c765321c7e766e5ab0 *DESCRIPTION
+1f8dbc6612d8c4b87b073cdee0a07152 *DESCRIPTION
 4bc3bf69ca5d0ce1e0fc8f73d42b5897 *NAMESPACE
-e14852835597918b85d2d65acd1584f3 *NEWS
+a2154ed426a4b37b5e6d0459ea709576 *NEWS
 cdd60299b86b702492b7c3c753eef711 *R/Lambda.R
 e0f7c7bd6d0fcc129ec1ecf96a0466a6 *R/find.param.R
 0485075917af195c5a60c68390f9a7fa *R/getdetectpar.R
 8e7c49627cb7a7e6ca86b2e1e0a1410d *R/make.scenarios.R
-733648661afea73a72c73da73f47d3e7 *R/methods.R
+9e9240f9bfc6d79b591ce213e863f2d0 *R/methods.R
 1260a1c79472d543681184c0cae10468 *R/onAttach.R
 bb550f9aefc83f1ada9a9bcd3be1a2d1 *R/optimalSpacing.R
 d00a9dfdfd55f22e5c86bbfdc17949a5 *R/power.R
@@ -17,7 +17,7 @@ ca24e869b9318bee6067835b1799a092 *R/scenariosFromStatistics.R
 0546203d56322fdcb050d3031d0aa85b *R/utility.R
 36c0739bf1e8887bc72dd26f61a604bb *R/validate.R
 28210f0a158b96be5cf4f54a7e3955a1 *inst/CITATION
-79fe539d98a6ab81f8334fdd3f2adcfc *man/Lambda.Rd
+0c1bac0fd2061fe70cbfe1d798a95344 *man/Lambda.Rd
 efca10e16b1dd93d2ce8a38fbbfe8964 *man/costing.Rd
 1acce6106e2b40da1f69bc96463f83d8 *man/count.Rd
 625971f23a37f91f21fed51f212768a2 *man/getdetectpar.Rd
@@ -30,7 +30,7 @@ de8e53baaf7001d618f4cb8696fbe636 *man/predict.simulations.Rd
 9f62a47a509c5eaadc9dd92d9792986d *man/saturation.Rd
 14821b52d52148b1d9f62e79b6ae3a92 *man/scenarioSummary.Rd
 f082f59502f2bf4c50915fa3e47b173b *man/scenariosFromStatistics.Rd
-94f5891de28803ebad0e23af288001f3 *man/secrdesign-package.Rd
+e422d45b8e8cf55c8f62e31549f0c033 *man/secrdesign-package.Rd
 d36bae69c7b5eb5f8206da8279c65d24 *man/select.stats.Rd
 2468bca9e52794a0463d8468cfad5281 *man/summary.simulations.Rd
 22acace698e640ba1fa582d95679e255 *man/validate.Rd
