@@ -218,18 +218,26 @@ argdf <- function (args) {
         tmp <- lapply(tmp, collapsesubarg, 'details')
         tmp <- lapply(tmp, collapsesubarg, 'start')
         tmp <- lapply(tmp, collapsesubarg, 'detectpar') ## 2016-09-28
+        
+        ## replace any non-atomic components with their names ## 2019-09-28
+        fn <- function(comp) {
+            comp[!sapply(comp, is.atomic)] <- names(comp[!sapply(comp, is.atomic)])   
+            comp
+        }
+        tmp <- lapply(tmp,fn)
+        
         tmp <- lapply(tmp, function(x) sapply(x, format))
         nm <- unique(unlist(lapply(tmp, names)))
         tmp0 <- matrix('', nrow = length(tmp), ncol = length(nm),
                        dimnames = list(NULL,  nm))
         ## 2015-05-14 need better labelling of e.g. fixed$sigma, start$g0, start$D
         ## 2016-03-05 ad hoc fix... replace 'core' mask/matrix with scalar
-   
         tmp <- lapply(tmp, function(x) {
             if ("core" %in% names(x))
-            if (length(x$core)>1)
-                x$core <- 'core'
-            x})
+                # if (length(x$core)>1)
+                if (length(x['core'])>1)   ## 2020-01-29
+                    x$core <- 'core'
+                x})
         for (i in 1:length(tmp)) {
             # tmp0[i,names(tmp[[i]])] <- tmp[[i]]
             ## tmp0[i,names(tmp[[i]])] <- unlist(tmp[[i]])
@@ -244,7 +252,6 @@ argdf <- function (args) {
 }
 
 header <- function (object) {
-    
     values <- lapply(object$scenarios, unique)
     nvalues <- sapply(values, length)
     notID <- names(object$scenarios) != 'scenario'
@@ -315,7 +322,6 @@ summary.selectedstatistics <- function (object,
     if (length(qfields)>1) alpha3 <- as.numeric(substring(qfields[2],2,4))/1000
     q1tag <- paste('q', formatC(1000*alpha1, width=3, format="d", flag = "0"), sep='')
     q3tag <- paste('q', formatC(1000*alpha3, width=3, format="d", flag = "0"), sep='')
-
     type <- match.arg(type)
     
     ## allow for zero-length
@@ -374,7 +380,6 @@ summary.selectedstatistics <- function (object,
             new <- do.call(rbind, lapply(tmp, valstring))
             tmp <- cbind(object$scenarios[,varying], new)
         }
-
         out <- list(header = header(object), OUTPUT = tmp)
         # 2016-09-23 moved inside this block
         names(out$OUTPUT) <- as.character(unique(object$scenarios$scenario))

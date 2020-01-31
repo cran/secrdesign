@@ -45,19 +45,20 @@ preplus <- function(x) paste0(symnum(x, c(-Inf, 0, Inf), c("", "+")), x)
 
 plotpower <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), adjustRSE = FALSE, 
                        testtype = "two.sided", alpha = 0.05, targetpower = 0.80, 
-                       effectincr = 0.02, col = topo.colors(8), plt = TRUE, 
+                       effectincr = 0.02, plt = TRUE, col = topo.colors(8), lty = 1, 
+                       xlab = 'Population change %', ylab = 'Power %',
                        add = FALSE, shading = 'lightgreen', ...) {
-    
     if (!add) {
         xlim <- effectrange*100
         if (xlim[1] < -98) xlim[1] <- -100
         plot(0,0,type='n', xlim = xlim, ylim=c(0,100), yaxs='i', xaxs = 'i', axes = FALSE,
-             xlab = "", ylab = 'Power %', las=1)
+             xlab = "", ylab = "")
         at <- seq(-100, xlim[2], 50)
         lab <- preplus(at)
-        axis(1, at = at, labels = lab)
-        axis(2)
-        mtext(side=1, line=2.3, 'Population change %')
+        axis(1, at = at, labels = lab, las = 1)
+        axis(2, las = 1)
+        mtext(side=1, line=2.6, xlab, xpd = TRUE)
+        mtext(side=2, line=3, ylab, xpd = TRUE)
         abline(h = 100*targetpower, lty = 2, xpd = FALSE)
         box()
     }
@@ -65,12 +66,17 @@ plotpower <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), ad
     ## get critical values
     zero <- which.min(abs(xval))
     nRSE <- length(RSE)
+    col <- rep(col,nRSE)[1:nRSE]
+    lty <- rep(lty,nRSE)[1:nRSE]
     lower <- upper <- numeric(nRSE)
     dpower <- function (x, rse, target = targetpower) {
         power(x+1, rse, adjustRSE, testtype, alpha) - target
     }
+    pow <- matrix(nrow = length(xval), ncol = nRSE, dimnames=list(xval, RSE))
     for (i in 1:nRSE) {
-        if (power(xval[1]+1, RSE[i], adjustRSE, testtype, alpha) >= targetpower) {
+        pow[,i] <- power(xval+1, RSE[i], adjustRSE, testtype, alpha)
+        powlo <- pow[1,i]
+        if (!is.na(powlo) && (powlo >= targetpower)) {
             lower[i] <- uniroot(dpower, interval = xval[c(1,zero)], rse = RSE[i])$root
             lower100 <- lower[i]*100
             if (!is.na(shading)) {
@@ -79,7 +85,8 @@ plotpower <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), ad
             }
         }
         else lower[i] <- NA
-        if (power(xval[length(xval)]+1, RSE[i], adjustRSE, testtype, alpha) >= targetpower) {
+        powhi <- pow[length(xval),i]
+        if (!is.na(powhi) && (powhi >= targetpower)) {
             upper[i] <- uniroot(dpower, interval = xval[c(zero, length(xval))], rse = RSE[i])$root
             upper100 <- upper[i]*100
             if (!is.na(shading)) {
@@ -90,16 +97,17 @@ plotpower <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), ad
         else upper[i] <- NA
         
         powerpct <- 100*power(xval+1, RSE = RSE[i], adjustRSE, testtype, alpha)
-        lines (xval*100, powerpct, col = col[i], ...)
+        lines (xval*100, powerpct, col = col[i], lty = lty[i], ...)
     }
     
     list(RSE = RSE, effectrange = effectrange, testtype = testtype, adjustRSE = adjustRSE,
-         alpha = alpha, targetpower = targetpower, lower=lower, upper = upper)
+         alpha = alpha, targetpower = targetpower, lower=lower, upper = upper, power = pow)
 }
 
 plotpowerCI <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5), 
                          estimatedrange = effectrange, adjustRSE = FALSE, 
                        alpha = 0.05, effectincr = 0.02, col = topo.colors(8), plt = TRUE, 
+                       xlab = 'Population change %', ylab = 'Estimated population change %',
                        add = FALSE, ...) {
     
     if (!add) {
@@ -109,10 +117,10 @@ plotpowerCI <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5),
         laby <- preplus(seq(-100, estimatedrange[2]*100,50))
         axis (1, at = seq(0,effectrange[2]+1, 0.5), labels = labx, las = 1)
         axis (2, at = seq(0,estimatedrange[2]+1, 0.5), labels = laby, las = 1)
-        mtext (side=1, line=2.5, 'Population change %')
-        mtext (side=2, line=3, 'Estimated population change %')
-        abline(v=1, lty=2)
-        abline(h=1, lty=2)
+        mtext (side=1, line=2.6, xlab)
+        mtext (side=2, line=3.5, ylab)
+        abline(v=1, lty=2, xpd = FALSE)
+        abline(h=1, lty=2, xpd = FALSE)
         # abline(0,1, lty=2, col='blue')
         box()
     }
@@ -121,8 +129,8 @@ plotpowerCI <- function (RSE = seq(0.05,0.25,0.05), effectrange = c(-0.99,1.5),
     ci <- array(dim=c(length(xval), 2, nRSE), dimnames = list(xval, c('lower','upper'),RSE))
     for (i in 1:nRSE) {
         ci[,,i] <- t(sapply(xval, powerCI, RSE = RSE[i], adjustRSE = adjustRSE, alpha = alpha))
-        lines(xval, ci[,1,i], col = col[i], ...)
-        lines(xval, ci[,2,i], col = col[i], ...)
+        lines(xval, ci[,1,i], col = col[i], xpd = FALSE, ...)
+        lines(xval, ci[,2,i], col = col[i], xpd = FALSE, ...)
     }
     
     list(RSE = RSE, effectrange = effectrange, adjustRSE = adjustRSE,

@@ -78,6 +78,8 @@ Results are returned invisibly if \code{plt = TRUE}.
 
 }
 
+\note{fit.function = 'openCR.fit' is deprecated from 2.5.8 and will be removed in a later version}
+
 \seealso{
 
 \code{\link{minnrRSE}},

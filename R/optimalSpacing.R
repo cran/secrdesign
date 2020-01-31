@@ -4,6 +4,7 @@
 ## 2017-07-15 moved from Lambda.R
 ## 2017-08-09 finished (?) fiddling with plot etc.
 ## 2018-11-28 disribution; openCR
+## 2019-02-15 try-error catch bad uniroot in interpRSE
 ##############################################################################
 
 interpRSE <- function (values) {
@@ -13,8 +14,16 @@ interpRSE <- function (values) {
         r <- approx(values$R, values$r, RR)$y
         n-r
     }
-    ur <- uniroot(nminr, interval = range(values$R))
-    list(minimum = ur$root, objective = approx(values$R, values$RSE, ur$root)$y)
+    rangeR <- range(values$R)
+    if (diff(rangeR)>0) {
+        ur <- try(uniroot(nminr, interval = rangeR))
+        if (inherits(ur, 'try-error'))
+            list(minimum = NA, objective = NA)
+        else
+            list(minimum = ur$root, objective = approx(values$R, values$RSE, ur$root)$y)
+    }
+    else         list(minimum = NA, objective = NA)
+    
 }
 
 oneRSE <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats, detectfn,
@@ -87,11 +96,28 @@ simRSEfn <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats, dete
                            details = list())
     if (fitfunction == "openCR.fit") defaultfitargs$distribution <- "poisson"
     fitargs <- allargs[!(names(allargs) %in% c("seed", "ncores", "Ndist"))]
+    fitargs <- fitargs[names(fitargs) %in% names(formals(fitfunction))]   ## 2019-02-15
     runargs$fit.args <- replacedefaults(defaultfitargs, fitargs)    
-    
     ## run
     sims1 <- do.call(run.scenarios, runargs)
     
+    ########################################################
+    ## 2019-02-15 bug with openCR.fit and nrepeats>1 
+    ## predict.openCR does not have n.mash
+    ## so RB is inflated
+    ## ad hoc fix - works for optimalSpacing because we can assume default extractfn
+    if (fitfunction == 'openCR.fit') {
+        fixfn <- function (x) {
+            # for each replicate
+            lapply(x, function(y) {
+                y['D',] <- y['D',] / nrepeats
+            })
+        }
+        # for each scenario
+        sims1$output <- lapply(sims1$output, fixfn)
+    }
+    ########################################################
+
     allRSE <- select.stats(sims1, parameter = "D", c("estimate","RSE"))
     eachRSE <- cbind(R = rep(R, each = nrepl), do.call(rbind, allRSE$output))
     tmp <- summary(select.stats(sims1, parameter = "D", c("RSE","RB","ERR")),
@@ -200,7 +226,7 @@ optimalSpacing <- function (D, traps, detectpar, noccasions,
 
     if (!is.na(CF)) {
         if (!is.null(values))
-            opt <- interpRSE(values)
+            opt <- try(interpRSE(values))
         else
             ## this path is never taken in current version 2017-09-27
             opt <- optimize(oneRSE,  interval = range(R), k = k, traps = traps,
@@ -210,10 +236,13 @@ optimalSpacing <- function (D, traps, detectpar, noccasions,
     }
     #################
     if (fit.function %in% c("secr.fit", "openCR.fit")) {
-        if (fit.function == "openCR.fit")
+        if (fit.function == "openCR.fit") {
+            warning("fit.function = 'openCR.fit' is deprecated in secr >= 2.5.8 and will be removed in a later version")
             args$distribution <- distribution
-        else
+        }
+        else {
             args$details <- list(distribution = distribution)   ## blocks other supplied details
+        }
         
         simRSE <- simRSEfn (simulationR, k, traps, xsigma, detectpar, noccasions, nrepeats,
                             detectfn, nx = maskargs$nx, nrepl, fit.function, args)

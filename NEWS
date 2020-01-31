@@ -1,3 +1,28 @@
+Changes in version 2.5.10 (2020-01-31)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() default extractfn (no model fitted) uses RSEp approximation of 
+       Efford & Boulanger 2019
+
+Bugs fixed
+    o   optimalSpacing() with simulations, fit.function = "openCR.fit" and nrepeats>1
+        miscalculated RB(D-hat)
+    o   summary.selectedstatistics() failed when run.scenarios() pop.args included poly
+    o   header() stumbled on non-numeric (covariate) specification of D
+    o   run.scenarios() spurious warning for non-numeric D
+    
+Bug not fixed (see Other)
+    o   With fit.function 'openCR.fit', the calculation of RB(D-hat) in 
+        summarized simulations does not reflect nrepeats>1
+
+Other
+    o   fit.function 'openCR.fit' is deprecated, and will be removed in a later version; 
+        secr.fit is now fast enough
+    o   optimalSpacing() catches bad root finding when limits inappropriate
+    o   optimalSpacing() only passes valid fit.args to run.scenarios
+    o   force ncores = 1 when fitting model (internal function processCH)
+    
+
 Changes in version 2.5.7 (2019-02-04)
 
 New features or changed behaviour of old functions

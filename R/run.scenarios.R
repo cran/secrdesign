@@ -23,6 +23,7 @@
 ## 2017-07-26 allow for S3 rbind.capthist
 ## 2017-09-14 nrepeat bug with method = 'none'
 ## 2017-12-01 tweak to fitarg$start: only one value per par
+## 2020-01-28 change to new rse in defaultextractfn
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -75,7 +76,8 @@ defaultextractfn <- function(x) {
             else {
                 n <- nrow(CH)
                 ndet <- sum(abs(CH)>0)
-                r <- ndet - n
+                ## r <- ndet - n
+                r2 <- sum(abs(CH)) - n   ## 2020-01-28
                 nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
                 ## detectors per animal
                 dpa <- if (length(dim(CH)) == 2)
@@ -89,8 +91,11 @@ defaultextractfn <- function(x) {
                     c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
                       unmarked=unmarked, nonID = nonID, nzero = nzero)
                 }
-                else
-                    c(n=n, ndet=ndet, nmov=nmoves, dpa = dpa, rse = sqrt(1/n + 1/r))
+                else {
+                    ## c(n=n, ndet=ndet, nmov=nmoves, dpa = dpa, rse = sqrt(1/n + 1/r))
+                    ## 2020-01-28 change to new rse
+                    c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(1/min(n,r2)))
+                }
             }
         }
         if (ms(x))
@@ -324,7 +329,16 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, ...) {
         })
         ## prepare arguments for secr.fit()
         fitarg$capthist <- CH
-
+        
+        # block 2020-01-31: see corresp Uwe Ligges
+        # chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+        # if (nzchar(chk) && chk == "TRUE") {
+        #     ## 2020-01-29 force ncores = 1 that was previously the default
+        #     fitarg$ncores <- 1L
+        # }
+        
+        fitarg$ncores <- 1L
+        
         if (is.null(fitarg$model))
             fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
         if (fitarg$start[1] == 'true') {
@@ -455,7 +469,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
-        if (!byscenario & (ncores > 1)) {
+        if (!byscenario && (ncores > 1)) {
             out <- parLapply(clust, 1:nrepl, onesim, scenario = x)
         } else {
             out <- lapply(1:nrepl, onesim, scenario = x)
@@ -541,6 +555,7 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         default.args$details <- list(nsim = 0)
     }
     else if (fit.function == 'openCR.fit') {
+        warning("fit.function = 'openCR.fit' is deprecated in secr >= 2.5.8 and will be removed in a later version")
         default.args <- as.list(args(openCR.fit))[1:19]
         default.args$type <- "secrD"
         default.args$model <- list(lambda0~1, sigma~1)
@@ -589,9 +604,15 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     for (i in 1:nrow(scenarios)) {
         pi <- scenarios$popindex[i]
         mi <- scenarios$maskindex[i]
-        if ((full.pop.args[[pi]]$model2D %in% c('IHP', 'linear')) &
-            (is.character(full.pop.args[[pi]]$D))) {          ## linear 2014-09-03
-            avD <- mean (covariates(maskset[[mi]])[,full.pop.args[[pi]]$D])
+        if ((full.pop.args[[pi]]$model2D %in% c('IHP', 'linear'))) {  ## linear 2014-09-03
+            ## 2020-01-29
+            if (is.character(full.pop.args[[pi]]$D)) {          
+                # avD <- mean (covariates(maskset[[mi]])[,full.pop.args[[pi]]$D])
+                avD <- mean (covariates(full.pop.args[[pi]]$core)[,full.pop.args[[pi]]$D])
+            }
+            else {
+                avD <- mean(full.pop.args[[pi]]$D)
+            }
             scenarios[i, 'nrepeats'] <- 1   ## override
             scenarios[i, 'D'] <- avD
         }

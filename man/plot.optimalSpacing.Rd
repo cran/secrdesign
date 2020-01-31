@@ -32,7 +32,7 @@ The \dots argument may be used to pass other plotting arguments to override defa
 
 \tabular{lll}{
 Function \tab Arguments \tab Note \cr
-plot \tab `xlab', `ylab, `xlim', `ylim', `las', `xaxs', `yaxs' \tab add = FALSE \cr
+plot \tab `xlab', `ylab', `xlim', `ylim', `las', `xaxs', `yaxs' \tab add = FALSE \cr
 points \tab `col', `cex', `pch' \tab optimum and simulated RSE \cr
 lines \tab `col', `lwd', `lty' \tab rule-of-thumb RSE \cr
 }

@@ -28,7 +28,7 @@ Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
 parameter values for a particular scenario. The first estimates the
 parameter values and their standard errors from each dataset by
-maximizing the full likelihood, as usual in \code{secr.fit} of \code{openCR.fit}. The second
+maximizing the full likelihood, as usual in \code{secr.fit} or \code{openCR.fit}. The second
 takes the short cut of computing variances and SE from the Hessian
 estimated numerically at the known expected values of the parameters,
 without maximizing the likelihood. Set \code{method = "none"} for this
@@ -125,8 +125,6 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
 
 }
 
-\note{100 ha = 1 km^2}
-
 \value{
 
   An object of class (x, `secrdesign', `list'), where x is one of
@@ -166,12 +164,17 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
 
 \note{
 
+100 ha = 1 km^2.
+
+
 For \code{ncores > 1} it pays to keep an eye on the processes from the
   Performance page of Windows Task Manager (<ctrl><alt><del>), or `top' in
   linux OS. If you interrupt \code{run.scenarios} (<Esc> from Windows)
   you may occasionally find some processes do not terminate and have to
   be manually terminated from the Task Manager - they appear as
   Rscript.exe on the Processes page.
+
+fit.function = 'openCR.fit' is deprecated from 2.5.8 and will be removed in a later version.
   
 }
 

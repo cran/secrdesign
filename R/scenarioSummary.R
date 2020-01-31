@@ -42,7 +42,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
                              CF = 1.0, costing = FALSE, ..., ncores = 1) {
     ## mainline
     ## record start time etc.
-    ptm  <- proc.time()
+    ## 2019-02-16 not needed ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     extrafields <- FALSE
@@ -175,7 +175,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     ##---------------------------------------------------------------------------
     ##
     onescenario <- function (scenario) {
-
         traps <- trapset[[scenario$trapsindex]]
         mask <- maskset[[scenario$maskindex]]
         
@@ -187,7 +186,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         
         Pxy <- pdot(mask, traps, detectfn, detectpar, scenario$noccasions)
         esa <- sum(Pxy) * attr(mask, 'area')
-        
         sat <- saturation (scenario$D, detectpar, detectfn, traps, mask)
         if (detector(traps)[1] %in% c("multi", "proximity", "count"))
             nrm <- Enrm(scenario$D, traps, mask, detectpar, 
@@ -249,7 +247,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         unlist(out)
     }
     ##---------------------------------------------------------------------------
-
     ## tweaked 2019-01-09 for single-trap arrays
     getspan <- function (traps) suppressWarnings(pmax(0, max(dist(traps))))
     spans <- unname(sapply(trapset, getspan))
