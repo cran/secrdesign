@@ -94,7 +94,9 @@ defaultextractfn <- function(x) {
                 else {
                     ## c(n=n, ndet=ndet, nmov=nmoves, dpa = dpa, rse = sqrt(1/n + 1/r))
                     ## 2020-01-28 change to new rse
-                    c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(1/min(n,r2)))
+                    ## c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(1/min(n,r2)))
+                    ## 2020-04-10 fix stupid error
+                    c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)))
                 }
             }
         }
