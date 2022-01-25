@@ -9,6 +9,7 @@
 /* 2017-03-26 created */
 /* 2017-08-02 L2 output from sumpkC */
 /* 2017-10-31 detectfn HAN, HCG bug fixed */
+/* 2020-11-02 protect sumpkC against divide by zero */
 
 #include "secrdesign.h"
 #include <time.h>
@@ -93,6 +94,7 @@ void sumpkC (
     if (*type > 2) error("unrecognised type in sumpkC");
     for (m=0; m<*mm; m++) {
 	L[m] = 0;
+        L2[m] = 0;
 	sumhk = 0;
 	sumhk2 = 0;
 	for (k = 0; k < *kk; k++) {
@@ -121,7 +123,9 @@ void sumpkC (
 	    ps =  1 - exp(-sumhk);
 	    L[m] = ps;
 	}
-	L2[m] = sumhk2 / sumhk / sumhk;	
+	if (sumhk>0) {   // 2020-11-02
+	    L2[m] = sumhk2 / sumhk / sumhk;	
+	}
     }
     *resultcode = 0;                   /* successful completion */
 }

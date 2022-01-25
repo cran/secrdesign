@@ -19,16 +19,16 @@ may comprise an actual field design input with \code{\link{read.traps}} or
 Examples. Even a single layout must be presented as a component of a
 list (e.g., \code{list(make.grid())}).
 
-If \code{ncores} > 1 then by default each scenario will be run in a separate worker
-process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}).
+If \code{byscenario = TRUE} then by default each scenario will be run in a separate worker
+process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}). The number of scenarios should not exceed the available number of cores (set by the 'ncores' argument or a prior call to `setNumThreads`).
 
-If \code{byscenario = FALSE} then replicates are split among cores (the default is to split scenarios among cores), which is useful if you have more cores than scenarios. Dividing replicates among cores (\code{byscenario = FALSE}) also largely avoids the inefficiency that results when some workers finish much sooner than others (load balancing is not an option in \code{run.scenarios}). Setting \code{ncores} greater than the number of scenarios causes an error when \code{byscenario = TRUE}.
+If \code{byscenario = FALSE} then from **secrdesign** 2.6.0 onwards the usual multithreading of **secr** 4.5 is applied. The number of cores should usually be set with `setNumThreads`.
 
 Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
 parameter values for a particular scenario. The first estimates the
 parameter values and their standard errors from each dataset by
-maximizing the full likelihood, as usual in \code{secr.fit} or \code{openCR.fit}. The second
+maximizing the full likelihood, as usual in \code{secr.fit}. The second
 takes the short cut of computing variances and SE from the Hessian
 estimated numerically at the known expected values of the parameters,
 without maximizing the likelihood. Set \code{method = "none"} for this
@@ -39,12 +39,12 @@ shortcut.
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, det.args, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"), 
+    pop.args, det.args, fit = FALSE, fit.function = "secr.fit", 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
-    ncores = 1, byscenario = TRUE, seed = 123, ...)
+    ncores = NULL, byscenario = FALSE, seed = 123, ...)
 
-fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"), 
-    fit.args, chatnsim, extractfn = NULL, ncores = 1, byscenario = TRUE,
+fit.models(rawdata, fit = FALSE, fit.function = "secr.fit", 
+    fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
     scen, repl, ...)
 }
 
@@ -61,15 +61,15 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
   \code{\link[secr]{sim.popn}} (optional)} 
   \item{det.args}{list of named arguments to
   \code{\link[secr]{sim.capthist}} (optional)} 
-  \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit} or \code{openCR.fit}, otherwise
+  \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
   data are generated but no model is fitted}
   \item{fit.function}{character name of function to use for model fitting}
   \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
-  \item{extractfn}{function to extract a vector of statistics from secr or openCR model}
+  \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
-  \item{ncores}{integer number of cores for parallel processing}
-  \item{byscenario}{logical; if TRUE and ncores>1 then scenarios are sent to different cores}
+  \item{ncores}{integer number of cores for parallel processing or NULL}
+  \item{byscenario}{logical; if TRUE then each scenario is sent to a different core}
   \item{seed}{integer pseudorandom number seed}
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
@@ -111,7 +111,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
 
   From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
 
-  The L'Ecuyer pseudorandom generator is used with a separate random
+  When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link{clusterSetRNGStream}}).
   
   A summary method is provided (see
@@ -174,7 +174,7 @@ For \code{ncores > 1} it pays to keep an eye on the processes from the
   be manually terminated from the Task Manager - they appear as
   Rscript.exe on the Processes page.
 
-fit.function = 'openCR.fit' is deprecated from 2.5.8 and will be removed in a later version.
+fit.function = 'openCR.fit' was deprecated from 2.5.8 and has been removed.
   
 }
 
@@ -208,6 +208,8 @@ summary(tmp1)
 
 \dontrun{
 
+setNumThreads(7)
+
 ###########################
 ## 2-phase example
 ## first make and save rawdata
@@ -221,7 +223,7 @@ summary(tmp1)
 
 ## then fit and summarise models
 tmp2 <- fit.models(tmp1, fit.args = list(list(model = g0~1),
-    list(model = g0~T)), fit = TRUE, ncores = 4)
+    list(model = g0~T)), fit = TRUE)
 summary(tmp2)
 ###########################
 
@@ -245,13 +247,13 @@ scen <- make.scenarios (trapsindex = 1:length(spacey), nrepeats = 8,
 
 ## RSE without fitting model
 sim <- run.scenarios (50, scenarios = scen, trapset = trapset, maskset = maskset,
-    ncores = 8, fit = TRUE, fit.args = list(method = 'none'), seed = 123)
+    fit = TRUE, fit.args = list(method = 'none'), seed = 123)
 
 ## Extract statistics for predicted density
 sim <- select.stats(sim, parameter = 'D')
 
 ## Plot to compare line spacing
-summ <- summary (sim, type='array',  fields = c('mean','lcl','ucl'))$summary
+summ <- summary (sim, type='array',  fields = c('mean','lcl','ucl'))$OUTPUT
 plot(0,0,type='n', xlim=c(1.500,5.500), ylim = c(0,0.36), yaxs = 'i',
     xaxs = 'i', xlab = 'Line spacing  km', ylab = 'RSE (D)')
 xv <- seq(2,5,0.5)

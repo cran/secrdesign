@@ -23,21 +23,21 @@ weighted <- function (onescenario, param) {
 }
 
 select.stats <- function (object, parameter = 'D', statistics, true) {
-    
-    if (!inherits(object, 'estimatetables'))
-        stop ("select.stats requires input of class estimatetables")
-    if (is.na(object$outputtype))
-        stop ("cannot select.stats output of unknown type")
-    if (object$outputtype %in% c('secrfit', 'openCRfit'))
-        stop ("cannot select.stats from fitted model - use predict() first")
-    #if (missing(estname) | missing(SEname)) {
-    estname <- ""
-    SEname <- ""
-    if (object$outputtype %in% c('predicted', 'derived', 'regionN')) {
-        estname <- 'estimate'
-        SEname <- 'SE.estimate'
-    }
-    else if (object$outputtype %in% c('rawcounts')) {
+  
+  if (!inherits(object, 'estimatetables'))
+    stop ("select.stats requires input of class estimatetables")
+  if (is.na(object$outputtype))
+    stop ("cannot select.stats output of unknown type")
+  if (object$outputtype %in% c('secrfit'))
+    stop ("cannot select.stats from fitted model - use predict() first")
+  #if (missing(estname) | missing(SEname)) {
+  estname <- ""
+  SEname <- ""
+  if (object$outputtype %in% c('predicted', 'derived', 'regionN')) {
+    estname <- 'estimate'
+    SEname <- 'SE.estimate'
+  }
+  else if (object$outputtype %in% c('rawcounts')) {
         estname <- 'n'
         SEname <- 'r'
         parameter <- 'Number'

@@ -3,8 +3,9 @@
 ## optimalSpacing.R
 ## 2017-07-15 moved from Lambda.R
 ## 2017-08-09 finished (?) fiddling with plot etc.
-## 2018-11-28 disribution; openCR
+## 2018-11-28 distribution; openCR
 ## 2019-02-15 try-error catch bad uniroot in interpRSE
+## 2020-01-20 2.6.0 removed openCR
 ##############################################################################
 
 interpRSE <- function (values) {
@@ -80,7 +81,7 @@ simRSEfn <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats, dete
     
     ## general arguments
     defaultargs <- list(nrepl = nrepl, trapset = traps, scenarios = scen1, fit = TRUE,
-                        fit.function = fitfunction, byscenario = FALSE, ncores = 1, 
+                        fit.function = fitfunction, byscenario = FALSE, ncores = NULL, 
                         xsigma = xsigma, nx = nx)
     dotsargs <- allargs[names(allargs) %in% c("seed", "ncores")]
     runargs <- replacedefaults(defaultargs, dotsargs)
@@ -94,30 +95,12 @@ simRSEfn <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats, dete
     defaultfitargs <- list(start = "true", 
                            detectfn = detectfn, 
                            details = list())
-    if (fitfunction == "openCR.fit") defaultfitargs$distribution <- "poisson"
     fitargs <- allargs[!(names(allargs) %in% c("seed", "ncores", "Ndist"))]
     fitargs <- fitargs[names(fitargs) %in% names(formals(fitfunction))]   ## 2019-02-15
     runargs$fit.args <- replacedefaults(defaultfitargs, fitargs)    
     ## run
     sims1 <- do.call(run.scenarios, runargs)
     
-    ########################################################
-    ## 2019-02-15 bug with openCR.fit and nrepeats>1 
-    ## predict.openCR does not have n.mash
-    ## so RB is inflated
-    ## ad hoc fix - works for optimalSpacing because we can assume default extractfn
-    if (fitfunction == 'openCR.fit') {
-        fixfn <- function (x) {
-            # for each replicate
-            lapply(x, function(y) {
-                y['D',] <- y['D',] / nrepeats
-            })
-        }
-        # for each scenario
-        sims1$output <- lapply(sims1$output, fixfn)
-    }
-    ########################################################
-
     allRSE <- select.stats(sims1, parameter = "D", c("estimate","RSE"))
     eachRSE <- cbind(R = rep(R, each = nrepl), do.call(rbind, allRSE$output))
     tmp <- summary(select.stats(sims1, parameter = "D", c("RSE","RB","ERR")),
@@ -130,19 +113,23 @@ simRSEfn <- function (R, k, traps, xsigma, detectpar, noccasions, nrepeats, dete
 }
 ##############################################################################
 
-optimalSpacing <- function (D, traps, detectpar, noccasions,
-                            nrepeats = 1,
-                            detectfn = c('HHN', 'HHR', 'HEX','HAN','HCG', 'HN', 'HR', 'EX'),
-                            fittedmodel = NULL,
-                            xsigma = 4,
-                            R = seq(0.2, 4, 0.2),
-                            CF = 1.0,
-                            distribution = c("poisson", "binomial"),
-                            fit.function = c("none", "openCR.fit", "secr.fit"),
-                            simulationR = seq(0.4, 4, 0.4),
-                            nrepl = 10,
-                            plt = FALSE,
-                            ...) {
+optimalSpacing <- function (
+    D, 
+    traps, 
+    detectpar, 
+    noccasions,
+    nrepeats = 1,
+    detectfn = c('HHN', 'HHR', 'HEX','HAN','HCG', 'HN', 'HR', 'EX'),
+    fittedmodel = NULL,
+    xsigma = 4,
+    R = seq(0.2, 4, 0.2),
+    CF = 1.0,
+    distribution = c("poisson", "binomial"),
+    fit.function = c("none", "secr.fit"),
+    simulationR = seq(0.4, 4, 0.4),
+    nrepl = 10,
+    plt = FALSE,
+    ...) {
 
     ## if a fitted model is provided then all preceding arguments are overridden
     ## (D, traps, detectpar, noccasions, detectfn)
@@ -235,23 +222,11 @@ optimalSpacing <- function (D, traps, detectpar, noccasions,
                             CF = CF)
     }
     #################
-    if (fit.function %in% c("secr.fit", "openCR.fit")) {
-        if (fit.function == "openCR.fit") {
-            warning("fit.function = 'openCR.fit' is deprecated in secr >= 2.5.8 and will be removed in a later version")
-            args$distribution <- distribution
-        }
-        else {
-            args$details <- list(distribution = distribution)   ## blocks other supplied details
-        }
-        
+    if (fit.function %in% c("secr.fit")) {
+        args$details <- list(distribution = distribution)   ## blocks other supplied details
         simRSE <- simRSEfn (simulationR, k, traps, xsigma, detectpar, noccasions, nrepeats,
                             detectfn, nx = maskargs$nx, nrepl, fit.function, args)
     }
-    # else if (fit.function == "openCR.fit") {
-    #     args$distribution <- distribution
-    #     simRSE <- simRSEfn2 (simulationR, k, traps, xsigma, detectpar, noccasions, nrepeats,
-    #                         detectfn, nx = maskargs$nx, nrepl, args)
-    # }
     else simRSE <- NULL
     #################
 

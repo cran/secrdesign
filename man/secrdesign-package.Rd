@@ -16,8 +16,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.5.11\cr
-Date: \tab 2020-04-10\cr
+Version: \tab 2.6.0\cr
+Date: \tab 2022-01-26\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 

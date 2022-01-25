@@ -2,7 +2,6 @@ import (parallel)
 import (secr)
 
 importFrom ("abind", "abind")
-importFrom ("openCR", "runsim.spatial", "sumsims", "openCR.fit")
 importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
            "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
 importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",

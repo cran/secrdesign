@@ -1,3 +1,19 @@
+Changes in version 2.6.0 (2022-01-26)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() 'fit' option uses multithreading capability of secr
+    o  run.scenarios() 'ncores' defaults to NULL (then uses value of environment 
+       variable RCPP_PARALLEL_NUM_THREADS set by setNumThreads())
+    o  run.scenarios() 'byscenario' defaults to FALSE
+
+Bugs fixed
+    o  Enrm() expected movement could fail when some of mask far from detectors
+
+Other
+    o  removed openCR options and imports (deprecated from 2.5.8)
+    o  initial value of RCPP_PARALLEL_NUM_THREADS (usually 2) is set by secr onload 
+    o  depends R (>= 3.5.0), secr (>= 4.2.0)
+
 Changes in version 2.5.11 (2020-04-10)
 
 New features or changed behaviour of old functions

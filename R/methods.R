@@ -323,7 +323,7 @@ summary.selectedstatistics <- function (object,
     q1tag <- paste('q', formatC(1000*alpha1, width=3, format="d", flag = "0"), sep='')
     q3tag <- paste('q', formatC(1000*alpha3, width=3, format="d", flag = "0"), sep='')
     type <- match.arg(type)
-    
+  
     ## allow for zero-length
     minNA <- function (x) if (sum(!is.na(x)) > 0) min(x, na.rm = T) else NA
     maxNA <- function (x) if (sum(!is.na(x)) > 0) max(x, na.rm = T) else NA

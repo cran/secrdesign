@@ -73,8 +73,8 @@ crosstraps = TRUE)
   geometry (e.g., number and spacing of traps). The number of such
   arrays is varied with the \code{nrepeats} argument. For example, you
   may compare designs with many small arrays or a few large ones. In
-  practice, \code{run.scenarios} simulates a single layout is simulated
-  with density D * nrepeats. This shortcut is not appropriate when
+  practice, \code{run.scenarios} simulates a single layout with density 
+  D * nrepeats. This shortcut is not appropriate when
   animals compete for traps (detector = `single').
 
   \code{fitindex} allows a choice of different models when the argument

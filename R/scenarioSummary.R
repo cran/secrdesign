@@ -39,13 +39,16 @@ trapsperHR <- function(traps, r) {
 # trapsperHR (gr, circular.r(p = 0.95, detectfn = 'HEX', sigma = 20))
 
 scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,   
-                             CF = 1.0, costing = FALSE, ..., ncores = 1) {
+                             CF = 1.0, costing = FALSE, ..., ncores = NULL) {
     ## mainline
     ## record start time etc.
     ## 2019-02-16 not needed ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     extrafields <- FALSE
+    if (is.null(ncores)) {
+        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    }
     
     if (!all(as.character(scenarios$detectfn) %in% 
              c(as.character(c(0,1,2,14:18)), 'HN','HR','EX','HHN', 'HEX', 'HHR', 'HCG','HAN')))
@@ -177,7 +180,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     onescenario <- function (scenario) {
         traps <- trapset[[scenario$trapsindex]]
         mask <- maskset[[scenario$maskindex]]
-        
         detectfn <- secr:::valid.detectfn (scenario$detectfn, c(0,1,2,14:18))
         detectpar = list(g0 = scenario$g0, lambda0 = scenario$lambda0, sigma = scenario$sigma, z = scenario$z)
         dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 1 to 15, 2 to 16

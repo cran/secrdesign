@@ -24,6 +24,9 @@
 ## 2017-09-14 nrepeat bug with method = 'none'
 ## 2017-12-01 tweak to fitarg$start: only one value per par
 ## 2020-01-28 change to new rse in defaultextractfn
+## 2022-01-20 2.6.0 ncores default NULL; multithreaded secr.fit
+
+# ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -121,13 +124,6 @@ defaultextractfn <- function(x) {
             out[[1]]
         }
     }
-    else if (inherits(x,'openCR') & (!is.null(x$fit))) {
-        ## fitted model:
-        ## default predictions of 'real' parameters
-        out <- predict(x)
-        out$D <- cbind(session=1, out$superD)
-        do.call(rbind, out[c('D','lambda0','sigma')])[,-1]
-    }
     else
         ## null output: dataframe of 0 rows and 0 columns
         data.frame()
@@ -211,8 +207,9 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
 
                 ## 2017-10-03 to allow user to specify core directly,
                 ## make this assignment conditional
-                if (!inherits(poparg$core, 'mask'))
+                if (!inherits(poparg$core, 'mask')) {
                     poparg$core <- mask
+                }
 
                 ## for 'linear' case we may want a constant numeric value
                 if (!is.character(poparg$D) & (length(poparg$D)<nrow(mask)))
@@ -305,7 +302,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args, mask, multi
     })
 }
 #####################
-processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, ...) {
+processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscenario, ...) {
     if (!fit) {
         extractfn(CH, ...)
     }
@@ -316,30 +313,17 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, ...) {
 
         par <- with(scenario, {
             wt <- D/sum(D)
-            ## 2015-01-27, 2017-09-14 (nrepeats added)
-            if (fitfunction == "openCR.fit") {
-                list(lambda0 = sum(lambda0*wt), superD = sum(D) * nrepeats, sigma = sum(sigma*wt))
+            if (detectfn[1] %in% 14:18) {
+                list(D = sum(D) * nrepeats, lambda0 = sum(lambda0*wt), sigma = sum(sigma*wt))
             }
             else {
-                if (detectfn[1] %in% 14:18) {
-                    list(D = sum(D) * nrepeats, lambda0 = sum(lambda0*wt), sigma = sum(sigma*wt))
-                }
-                else {
-                    list(D = sum(D) * nrepeats, g0 = sum(g0*wt), sigma = sum(sigma*wt))
-                }
+                list(D = sum(D) * nrepeats, g0 = sum(g0*wt), sigma = sum(sigma*wt))
             }
         })
         ## prepare arguments for secr.fit()
         fitarg$capthist <- CH
         
-        # block 2020-01-31: see corresp Uwe Ligges
-        # chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
-        # if (nzchar(chk) && chk == "TRUE") {
-        #     ## 2020-01-29 force ncores = 1 that was previously the default
-        #     fitarg$ncores <- 1L
-        # }
-        
-        fitarg$ncores <- 1L
+        if (byscenario) fitarg$ncores <- 1L
         
         if (is.null(fitarg$model))
             fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
@@ -404,12 +388,8 @@ getoutputtype <- function (output) {
     outputtype <-
         if (inherits(typical, 'secr'))
             'secrfit'
-        else if (inherits(typical, 'openCR'))
-            'openCRfit'
         else if (inherits(typical, 'summary.secr'))
             'secrsummary'
-        else if (inherits(typical, 'summary.openCR'))
-            'openCRsummary'
         else if (inherits(typical, 'data.frame')) {
             if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
                     any(c('R.N','E.N') %in% rownames(typical)))
@@ -435,14 +415,12 @@ getoutputtype <- function (output) {
 getoutputclass <- function (outputtype) {
     switch (outputtype,
             secrfit = c("fittedmodels", 'secrdesign', 'list'),
-            openCRfit = c("fittedmodels", 'secrdesign', 'list'),
             predicted = c("estimatetables", 'secrdesign', 'list'),
             derived = c("estimatetables", 'secrdesign', 'list'),
             regionN = c("estimatetables", 'secrdesign', 'list'),
             coef = c("estimatetables", 'secrdesign', 'list'),
             user = c("estimatetables", 'secrdesign', 'list'),
             secrsummary = c("summary", 'secrdesign', 'list'),
-            openCRsummary = c("summary", 'secrdesign', 'list'),
             capthist = c("rawdata", 'secrdesign', 'list'),
             selectedstatistics = c("selectedstatistics", 'secrdesign', 'list'),
             list      ## otherwise
@@ -450,11 +428,25 @@ getoutputclass <- function (outputtype) {
 }
 
 ###############################################################################
-run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
-    nx = 32, pop.args, det.args, 
-    fit = FALSE, fit.function = c("secr.fit", "openCR.fit"),
-    fit.args, chatnsim = 0, extractfn = NULL, multisession = FALSE, 
-    ncores = 1, byscenario = TRUE, seed = 123,  ...) {
+run.scenarios <- function (
+    nrepl,  
+    scenarios, 
+    trapset, 
+    maskset, 
+    xsigma = 4,
+    nx = 32, 
+    pop.args, 
+    det.args, 
+    fit = FALSE, 
+    fit.function = "secr.fit",
+    fit.args, 
+    chatnsim = 0, 
+    extractfn = NULL, 
+    multisession = FALSE, 
+    ncores = NULL, 
+    byscenario = FALSE, 
+    seed = 123,  
+    ...) {
 
     #--------------------------------------------------------------------------
     onesim <- function (r, scenario) {
@@ -467,13 +459,15 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         }
         CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
                      fitarg$mask, multisession)
-        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, ...)
+        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
-        if (!byscenario && (ncores > 1)) {
+        if (ncores>1 && !byscenario && !fit) {
+            ## distribute replicates over cluster only if !byscenario && !fit
             out <- parLapply(clust, 1:nrepl, onesim, scenario = x)
-        } else {
+        }
+        else {
             out <- lapply(1:nrepl, onesim, scenario = x)
         }
         message("Completed scenario ", x$scenario[1])
@@ -487,8 +481,11 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     cl   <- match.call(expand.dots = TRUE)
     fit.function <- match.arg(fit.function)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    if (byscenario & (ncores > nrow(scenarios)))
-        stop ("ncores exceeds number of scenarios")
+    if (is.null(ncores)) {
+        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    }
+    if (byscenario && (ncores > nrow(scenarios)))
+        stop ("when allocating by scenario, ncores should not exceed number of scenarios")
     if (multisession & !anyDuplicated(scenarios$scenario))
         warning ("multisession = TRUE ignored because no scenario duplicated")
 
@@ -556,16 +553,6 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
         default.args$detectfn <- 0     ## halfnormal
         default.args$details <- list(nsim = 0)
     }
-    else if (fit.function == 'openCR.fit') {
-        warning("fit.function = 'openCR.fit' is deprecated in secr >= 2.5.8 and will be removed in a later version")
-        default.args <- as.list(args(openCR.fit))[1:19]
-        default.args$type <- "secrD"
-        default.args$model <- list(lambda0~1, sigma~1)
-        default.args$start <- "true"   ## known values
-        default.args$detectfn <- "HHN" ## hazard halfnormal
-        default.args$details <- list()
-        default.args$distribution <- "poisson"
-    }
     else stop ("unrecognised fit function")
     if (missing(fit.args)) fit.args <- NULL
     fit.args <- wrapifneeded(fit.args, default.args)
@@ -623,20 +610,20 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
     #--------------------------------------------
     ## run simulations
     tmpscenarios <- split(scenarios, scenarios$scenario)
-    if (ncores > 1) {
+    if (ncores > 1 && (byscenario || !fit)) {
         list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
         clust <- makeCluster(ncores, methods = TRUE)
         clusterSetRNGStream(clust, seed)
-    }
-    if (byscenario & ncores > 1) {
-        output <- parLapply(clust, tmpscenarios, runscenario)
+        on.exit(stopCluster(clust))
     }
     else {
         set.seed (seed)
-        output <- lapply(tmpscenarios, runscenario)
     }
-    if (ncores > 1) {
-        on.exit(stopCluster(clust))
+    if (ncores > 1 && byscenario) {
+        output <- parLapply(clust, tmpscenarios, runscenario)
+    }
+    else {
+        output <- lapply(tmpscenarios, runscenario)
     }
 
     ##-------------------------------------------
@@ -680,27 +667,32 @@ run.scenarios <- function (nrepl,  scenarios, trapset, maskset, xsigma = 4,
 ## version of run.scenarios that accepts existing data and
 ## expands scenarios for multiple model definitions
 
-fit.models <- function (rawdata, fit = FALSE, fit.function = c("secr.fit", "openCR.fit"), 
-                        fit.args, chatnsim = 0, extractfn = NULL,
-                        ncores = 1, byscenario = TRUE, scen, repl, ...) {
-
+fit.models <- function (
+    rawdata, 
+    fit = FALSE, 
+    fit.function = "secr.fit", 
+    fit.args, 
+    chatnsim = 0, 
+    extractfn = NULL,
+    ncores = NULL, 
+    byscenario = FALSE, 
+    scen, 
+    repl, 
+    ...) {
+    
     #--------------------------------------------------------------------------
     onesim <- function (CH, scenario) {
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
-        if (is.null(fitarg$mask)) {   ## conditional 2017-05-26
+        if (is.null(fitarg$mask)) {  
             fitarg$mask <- maskset[[scenario$maskindex[1]]]
         }
-        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, ...)
+        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         ## match by name, not number 2015-01-27
         scenID <- as.character(trunc(x$scenario[1]))
-        if (!byscenario & (ncores > 1)) {
-            out <- parLapply(clust, CHlist[[scenID]], onesim, scenario = x)
-        } else {
-            out <- lapply(CHlist[[scenID]], onesim, scenario = x)
-        }
+        out <- lapply(CHlist[[scenID]], onesim, scenario = x)
         message("Completed scenario ", x$scenario[1])
         flush.console()
         out
@@ -746,8 +738,12 @@ fit.models <- function (rawdata, fit = FALSE, fit.function = c("secr.fit", "open
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    if (byscenario & (ncores > nrow(scenarios)))
+    if (is.null(ncores)) {
+        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    }
+    if (byscenario & (ncores > nrow(scenarios))) {
         stop ("ncores exceeds number of scenarios")
+    }
 
     ##--------------------------------------------
     ## default extractfn
@@ -764,14 +760,6 @@ fit.models <- function (rawdata, fit = FALSE, fit.function = c("secr.fit", "open
         default.args$start <- "true"   ## known values
         default.args$detectfn <- 0     ## halfnormal
         default.args$details <- list(nsim = 0)
-    }
-    else if (fit.function == 'openCR.fit') {
-        default.args <- as.list(args(openCR.fit))
-        default.args$type <- "secrD"
-        default.args$model <- list(lambda0~1, sigma~1)
-        default.args$start <- "true"   ## known values
-        default.args$detectfn <- "HHN" ## hazard halfnormal
-        default.args$details <- list()
     }
     else stop ("unrecognised fit function")
 
@@ -830,13 +818,12 @@ fit.models <- function (rawdata, fit = FALSE, fit.function = c("secr.fit", "open
     ## run simulations
     tmpscenarios <- split(scenarios, scenarios$scenario)
 
-    if (ncores > 1) {
+    if (ncores > 1 && (byscenario || !fit)) {
         list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
         clust <- makeCluster(ncores, methods = TRUE)
         on.exit(stopCluster(clust))
     }
-
-    if (byscenario & ncores > 1) {
+    if (ncores > 1 && byscenario) {
         output <- parLapply(clust, tmpscenarios, runscenario)
     }
     else {

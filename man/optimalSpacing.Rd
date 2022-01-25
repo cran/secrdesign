@@ -11,7 +11,7 @@ optimalSpacing (D, traps, detectpar, noccasions, nrepeats = 1,
     detectfn = c('HHN', 'HHR', 'HEX','HAN','HCG', 'HN', 'HR', 'EX'),
     fittedmodel = NULL, xsigma = 4, R = seq(0.2, 4, 0.2), CF = 1.0,
     distribution = c("poisson", "binomial"),
-    fit.function = c("none", "openCR.fit", "secr.fit"), 
+    fit.function = c("none", "secr.fit"), 
     simulationR = seq(0.4, 4, 0.4), nrepl = 10, 
     plt = FALSE, ...) 
 }
@@ -78,7 +78,7 @@ Results are returned invisibly if \code{plt = TRUE}.
 
 }
 
-\note{fit.function = 'openCR.fit' is deprecated from 2.5.8 and will be removed in a later version}
+\note{fit.function = 'openCR.fit' was deprecated from 2.5.8 and has been removed as an option}
 
 \seealso{
 
@@ -113,7 +113,7 @@ optimalSpacing(D = 5, traps = grid, detectfn = "HHN", detectpar =
 
 ## manual check
 grid <- make.grid(8, 8, spacing = 60, detector = 'proximity')
-scen <- make.scenarios(sigma = 20, D = 5, detectfn = 14, lambda0 = 0.2, sigma = 20,
+scen <- make.scenarios(D = 5, detectfn = 14, lambda0 = 0.2, sigma = 20,
     noccasions = 5)
 sim1 <- run.scenarios(nrepl = 20, scen, trapset = list(grid), fit = TRUE, 
     fit.args = list(detectfn = 14), ncores = 4, byscenario = FALSE)

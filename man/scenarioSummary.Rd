@@ -8,7 +8,7 @@
 \usage{
 
 scenarioSummary(scenarios, trapset, maskset, xsigma = 4, nx = 64, CF = 1.0, 
-    costing = FALSE, ..., ncores = 1)
+    costing = FALSE, ..., ncores = NULL)
 
 }
 
@@ -33,6 +33,8 @@ Not all scenarios from \code{make.scenarios()} are suitable. Grouped (multi-line
 \code{CF} may be a vector of values that is recycled across the components of \code{trapset}. The correction factor is a multiplier applied after all other calculations.
 
 The approximate RSE(D-hat) is rotRSE = CF/ sqrt(min(E(n), E(r))). This assumes n is Poisson-distributed. For binomial n an ad hoc adjustment is rotRSEB = sqrt(rotRSE^2 - 1 / (D x A)) where A is the mask area.
+
+If 'ncores' is NULL then the number of cores is taken from the environment variable RCPP_PARALLEL_NUM_THREADS set by `setNumThreads`.
 
 The \dots argument is for inputs to \code{\link{costing}}, including \code{unitcost} (required) and routelength (optional). 
 
