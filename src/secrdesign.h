@@ -1,35 +1,13 @@
-/* constants */
-  
-#define huge 1e10
+//------------------------------------------------------------------------------
+// BOOST used for statistical distributions NOT USED October 2022
+// return NAN for invalid inputs
+// see https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/stat_tut/weg/error_eg.html
+// and https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/pol_tutorial/changing_policy_defaults.html
+#define BOOST_MATH_DOMAIN_ERROR_POLICY ignore_error
+// must follow define domain error policy...
+#include <boost/math/distributions.hpp>     
+//------------------------------------------------------------------------------
 
-/* source to include */
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <R.h>       /* random numbers */
-#include <Rmath.h>   /* R math functions e.g. dbinom, dpois */
-#include <R_ext/Applic.h>
-#include <R_ext/Utils.h>
-
-void LambdaC (
-    double *par,       /* lambda0, sigma, z */
-    int    *kk,        /* number of traps */
-    int    *mm,        /* number of points on mask */
-    double *traps,     /* x,y locations of traps (first x, then y) */
-    double *mask,      /* x,y points on mask (first x, then y) */
-    int    *fn,        /* detectfn code 0 = halfnormal */
-    double *L,         /* return value vector of length mm */
-    int    *resultcode /* 0 for successful completion */
-    );
-void sumpkC (
-    int    *type,      /* 0 multi 1 proximity */
-    double *par,       /* lambda0, sigma, z */
-    int    *kk,        /* number of traps */
-    int    *mm,        /* number of points on mask */
-    double *traps,     /* x,y locations of traps (first x, then y) */
-    double *mask,      /* x,y points on mask (first x, then y) */
-    int    *fn,        /* detectfn code 0 = halfnormal */
-    double *L,         /* return value vector of length mm */
-    double *L2,        /* return value vector of length mm */
-    int    *resultcode /* 0 for successful completion */
-    );
+// RcppArmadillo.h pulls Rcpp.h in for us
+#include "RcppArmadillo.h"
+// [[Rcpp::depends(RcppArmadillo)]]

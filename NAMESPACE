@@ -1,14 +1,42 @@
 import (parallel)
 import (secr)
 
-importFrom ("abind", "abind")
+# Base R
+
 importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
            "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
 importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",
            "terms", "uniroot", "optimize", "approx", "dist", "pnorm", "symnum",
            "median")
-importFrom("utils", "flush.console", "packageDescription", "packageVersion")
-importFrom("grDevices", "topo.colors")
+
+importFrom("utils", 
+    "flush.console", 
+    "packageDescription", 
+    "packageVersion")
+
+importFrom("grDevices", 
+    "topo.colors")
+
+importFrom ("Rcpp", 
+    "evalCpp")
+
+# Other packages
+
+importFrom("sf",
+    "st_as_sf",
+    "st_buffer",
+    "st_union",
+    "st_make_grid",
+    "st_coordinates",
+    "st_intersection",
+    "st_linestring",
+    "st_multilinestring",
+    "st_polygonize",
+    "st_sfc"
+    )
+
+importFrom("kofnGA",
+    "kofnGA")
 
 export (make.scenarios)
 export (scenariosFromStatistics)
@@ -21,6 +49,7 @@ export (find.stats)
 export (make.array)
 export (header)
 export (Lambda)
+# export (Lambdak)
 export (Enrm)
 export (getdetectpar)
 export (minnrRSE)
@@ -28,6 +57,13 @@ export (optimalSpacing)
 export (costing)
 export (scenarioSummary)
 export (saturation)
+export (count)
+export (GAoptim)
+export (GApenfn)
+export (compactSample)
+export (Qpm)
+export (En2)
+
 S3method (plot, optimalSpacing)
 S3method (print, optimalSpacing)
 S3method (print, summarysecrdesign)
@@ -40,10 +76,12 @@ S3method (coef, fittedmodels)
 S3method (predict, fittedmodels)
 S3method (derived, fittedmodels)
 S3method (region.N, fittedmodels)
-# 2019
-export (count)
 S3method (count, summary)
 S3method (predict, summary)
 S3method (coef, summary)
+
+## DEBUGGING ONLY (cpp functions not documented)
+## exportPattern("*cpp")
+
 useDynLib (secrdesign, .registration = TRUE)
 

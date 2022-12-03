@@ -22,7 +22,7 @@ list (e.g., \code{list(make.grid())}).
 If \code{byscenario = TRUE} then by default each scenario will be run in a separate worker
 process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}). The number of scenarios should not exceed the available number of cores (set by the 'ncores' argument or a prior call to `setNumThreads`).
 
-If \code{byscenario = FALSE} then from **secrdesign** 2.6.0 onwards the usual multithreading of **secr** 4.5 is applied. The number of cores should usually be set with `setNumThreads`.
+If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be set with `setNumThreads`.
 
 Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
@@ -41,7 +41,7 @@ shortcut.
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     pop.args, det.args, fit = FALSE, fit.function = "secr.fit", 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
-    ncores = NULL, byscenario = FALSE, seed = 123, ...)
+    ncores = NULL, byscenario = FALSE, seed = 123, trap.args, ...)
 
 fit.models(rawdata, fit = FALSE, fit.function = "secr.fit", 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
@@ -51,7 +51,7 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
 \arguments{
   \item{nrepl}{integer number of replicate simulations}
   \item{scenarios}{dataframe of simulation scenarios}
-  \item{trapset}{secr traps object or a list of traps objects}
+  \item{trapset}{secr traps object or a list of traps objects or functions}
   \item{maskset}{secr mask object or a list of mask objects (optional)}
   \item{xsigma}{numeric buffer width as multiple of sigma (alternative
   to maskset)}
@@ -71,6 +71,7 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
   \item{ncores}{integer number of cores for parallel processing or NULL}
   \item{byscenario}{logical; if TRUE then each scenario is sent to a different core}
   \item{seed}{integer pseudorandom number seed}
+  \item{trap.args}{list of arguments for trapset components if using function option }
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
   \item{scen}{integer vector of scenario subscripts}
@@ -113,6 +114,8 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
 
   When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link{clusterSetRNGStream}}).
+  
+  From 2.7.0, each component of `trapset' may be a function that constructs a detector layout. This allows layouts to be constructed dynamically at the time each capthist is generated; arguments of each function are provided in the `trap.args' list. The primary purpose is to allow systematic grids, laceworks etc. to be constructed with a unique random origin for each replicate. The `maskset' argument must be provided - it should cover all potential layouts, regardless of origins.
   
   A summary method is provided (see
   \code{\link{summary.secrdesign}}). It is usually necessary to process

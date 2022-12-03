@@ -1,6 +1,19 @@
-############################################################################################
+##############################################################################
+## package 'secrdesign'
+## utility.R
+## 2022-10-23
+##############################################################################
+
+.local <- new.env()
+.local$packageType <- "pre-release"
+#.local$packageType <- ""
+.local$originCounter <- 1
+
+##############################################################################
+
 # difference is significant only for large g0 
-dfcast <- function (detectfn = 'HN', detectpar=list(g0 = 0.2, sigma = 25, z = NULL, w = NULL), matchsigma = 1, warning = TRUE) {
+dfcast <- function (detectfn = 'HN', detectpar=list(g0 = 0.2, sigma = 25, 
+    z = NULL, w = NULL), matchsigma = 1, warning = TRUE) {
     
     if (!(detectfn %in% 14:18) ) {
         lambda0 <- -log(1- detectpar$g0)
@@ -17,19 +30,21 @@ dfcast <- function (detectfn = 'HN', detectpar=list(g0 = 0.2, sigma = 25, z = NU
             else stop ("invalid detectfn for dfcast")
         }
         detectpar <- list(lambda0 = lambda0, 
-                          sigma = uniroot(cast, interval=c(0, detectpar$sigma))$root, 
-                          z = detectpar$z,
-                          w = detectpar$w)
+            sigma = uniroot(cast, interval=c(0, detectpar$sigma))$root, 
+            z = detectpar$z,
+            w = detectpar$w)
         detectfn <- detectfn + 14   ## HN -> HHN, HR -> HHR, EX -> HEX
-        if (warning)
-            warning (call. = FALSE, "approximating detection function ",  secr:::.localstuff$DFN[detectfn+1], 
-                     paste0(" lambda0 = ", round(detectpar$lambda0,4), 
-                            ", sigma = ", round(detectpar$sigma,1)))
+        if (warning) {
+            warning (call. = FALSE, "approximating detection function ",  
+                secr:::.localstuff$DFN[detectfn+1], 
+                paste0(" lambda0 = ", round(detectpar$lambda0,4), 
+                    ", sigma = ", round(detectpar$sigma,1)))
+        }
     }
     return(list(detectfn = detectfn, detectpar = detectpar)) 
 }
 
-############################################################################################
+##############################################################################
 defaultmodel <- function (CL, detectfn) {
     if (detectfn %in% c(0:8))
         model <- list(g0 = ~ 1, sigma = ~ 1)
@@ -42,11 +57,21 @@ defaultmodel <- function (CL, detectfn) {
     if (!CL) model <- c(list(D = ~1), model)
     model
 }
-############################################################################################
+##############################################################################
 
 replacedefaults <- function (default, user) replace(default, names(user), user)
 
 ##############################################################################
 
-.local <- new.env()
-.local$packageType <- ""  ## " pre-release"
+resetOriginCounter <- function () {
+    .local$originCounter <- 1
+}
+##############################################################################
+
+incrementOriginCounter <- function (n) {
+    # counter cycles through values 1:n
+    .local$originCounter <- (.local$originCounter %% n) + 1
+    .local$originCounter
+}
+##############################################################################
+

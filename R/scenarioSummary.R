@@ -39,17 +39,14 @@ trapsperHR <- function(traps, r) {
 # trapsperHR (gr, circular.r(p = 0.95, detectfn = 'HEX', sigma = 20))
 
 scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,   
-                             CF = 1.0, costing = FALSE, ..., ncores = NULL) {
+                             CF = 1.0, costing = FALSE, ..., ncores = 1) {
     ## mainline
     ## record start time etc.
     ## 2019-02-16 not needed ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     extrafields <- FALSE
-    if (is.null(ncores)) {
-        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
-    }
-    
+
     if (!all(as.character(scenarios$detectfn) %in% 
              c(as.character(c(0,1,2,14:18)), 'HN','HR','EX','HHN', 'HEX', 'HHR', 'HCG','HAN')))
         stop ("scenarioSummary requires hazard detection function HHN, HEX etc. (HN, EX approximated)")
@@ -189,21 +186,27 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         Pxy <- pdot(mask, traps, detectfn, detectpar, scenario$noccasions)
         esa <- sum(Pxy) * attr(mask, 'area')
         sat <- saturation (scenario$D, detectpar, detectfn, traps, mask)
-        if (detector(traps)[1] %in% c("multi", "proximity", "count"))
+        if (detector(traps)[1] %in% c("multi", "proximity", "count")) {
             nrm <- Enrm(scenario$D, traps, mask, detectpar, 
                         scenario$noccasions, detectfn = detectfn)
-        else
-            nrm <- c(En=NA,Er=NA,Em=NA)
+            en2 <- En2(scenario$D, traps, mask, detectpar, 
+                scenario$noccasions, detectfn = detectfn)
+        }
+        else {
+            nrm <- c(En = NA, Er = NA, Em = NA)
+            en2 <- c(En = NA, En2 = NA)
+        }
         
         ## 2018-06-11
         nrm <- nrm * scenario$nrepeats
+        en2 <- en2 * scenario$nrepeats
         esa <- esa * scenario$nrepeats
         
         rotRSE <- 1 / sqrt(min(nrm[1:2]))
         rotRSEB <- (rotRSE^2 - 1 / (scenario$D * scenario$nrepeats * maskarea(mask)))^0.5 * scenario$CF
         rotRSE <- rotRSE * scenario$CF
 
-        out <- c(scenario[1:8], round(nrm,3))
+        out <- c(scenario[1:8], round(nrm,3), round(en2[2],3))
 
         out <- c(out, 
                  esa = esa,
@@ -254,7 +257,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     spans <- unname(sapply(trapset, getspan))
     ntraps <- unname(sapply(trapset, nrow))
     spaces <- unname(sapply(trapset, spacing))
-    spaces <- sapply(spaces, function(x) if (is.null(x)) NA else x)  ## patch 2019-01-09
+    spaces <- sapply(spaces, function(x) if (is.null(x) || length(x)==0) NA else x)  ## patch 2019-01-09, 2022-10-26
     
     if (is.null(scenarios$CF)) {
         if (length(CF) > length(trapset))
@@ -268,7 +271,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     ## run summaries
     tmpscenarios <- split(scenarios, scenarios$scenario)
     if (ncores > 1) {
-        ## not needed: list(...) ## ensures promises evaluated see parallel vignette
         clust <- makeCluster(ncores, methods = TRUE)
         on.exit(stopCluster(clust))
         output <- parLapply(clust, tmpscenarios, onescenario)

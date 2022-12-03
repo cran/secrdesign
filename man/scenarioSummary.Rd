@@ -8,7 +8,7 @@
 \usage{
 
 scenarioSummary(scenarios, trapset, maskset, xsigma = 4, nx = 64, CF = 1.0, 
-    costing = FALSE, ..., ncores = NULL)
+    costing = FALSE, ..., ncores = 1)
 
 }
 
@@ -34,7 +34,7 @@ Not all scenarios from \code{make.scenarios()} are suitable. Grouped (multi-line
 
 The approximate RSE(D-hat) is rotRSE = CF/ sqrt(min(E(n), E(r))). This assumes n is Poisson-distributed. For binomial n an ad hoc adjustment is rotRSEB = sqrt(rotRSE^2 - 1 / (D x A)) where A is the mask area.
 
-If 'ncores' is NULL then the number of cores is taken from the environment variable RCPP_PARALLEL_NUM_THREADS set by `setNumThreads`.
+The default \code{ncores = 1} (new in 2.7.0) is usually faster than setting ncores>1 because of the overheads in setting up a parallel cluster.
 
 The \dots argument is for inputs to \code{\link{costing}}, including \code{unitcost} (required) and routelength (optional). 
 
@@ -47,6 +47,7 @@ A dataframe including the first 8 columns from scenarios and the computed column
 \item{En}{expected number of individuals}
 \item{Er}{expected number of recaptures}
 \item{Em}{expected number of movement recaptures}
+\item{En2}{expected number of individuals detected at two or more sites}
 \item{esa}{effective sampling area (ha)}
 \item{CF}{rule-of-thumb correction factor}
 \item{rotRSE}{rule-of-thumb relative standard error of density estimate}

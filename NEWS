@@ -1,3 +1,26 @@
+Changes in version 2.7.0 (2022-12-04)
+
+New features or changed behaviour of old functions
+    o  GAoptim() optimization by genetic algorithm using min(n,r) criterion 
+       (Durbach et al. 2021) and others 
+    o  minnrRSE() accepts GAoptim() output
+    o  En2() and Qpm() for additional optimization criteria
+    o  run.scenarios() option to create trapset dynamically with function(s)
+    o  run.scenarios() compatible with dynamic density function in pop.args
+
+Bugs fixed
+    o  run.scenarios() failed with grouped scenarios if maskindex not specified
+    
+Other
+    o  on GitHub
+    o  added tests
+    o  exports internal functions GApenfn() and compactSample()
+    o  make.scenarios allows single-level 'groups' 
+    o  check for consistent traps etc. across groups within scenario
+    o  parallel clusters not used by run.scenarios() if fit = FALSE
+    o  shift to Rcpp, RcppArmadillo from C
+    o  summaryScenarios() ncores defaults to 1 (usually faster than >1)
+
 Changes in version 2.6.0 (2022-01-26)
 
 New features or changed behaviour of old functions

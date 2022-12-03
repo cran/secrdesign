@@ -5,7 +5,7 @@
 ###############################################################################
 
 .onAttach <- function (libname, pkgname) {
-    version <- paste0(packageVersion('secrdesign'), .local$packageType)
+    version <- paste0(packageVersion('secrdesign'), ' ', .local$packageType)
     packageStartupMessage( "This is secrdesign ", version, 
                            ". For overview type ?secrdesign" )
 }
