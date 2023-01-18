@@ -61,7 +61,6 @@ OF <- function (v,
     else {
         en2 <- En2(D = D, traps = traps, mask = mask, noccasions = noccasions, 
              detectpar = detectpar, detectfn = detectfn)
-        
         -c(en2[2], sum(en2))[crit-4]
     }
 }

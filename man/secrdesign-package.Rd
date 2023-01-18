@@ -16,8 +16,8 @@ Tools to assist the design of spatially explicit capture--recapture studies of a
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.7.0\cr
-Date: \tab 2022-12-04\cr
+Version: \tab 2.8.0\cr
+Date: \tab 2023-01-19\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -44,6 +44,11 @@ The simulation functions in \pkg{secrdesign} are:
   each scenario \cr 
 }
 
+\if{html}{\figure{secrdesign-fig1.png}{options: width=700}}
+\if{latex}{\figure{secrdesign-fig1.png}{options: width=5.5in}}
+
+\bold{Fig.} Core simulation functions in \pkg{secrdesign} (yellow) and their main inputs and outputs. Output from the simulation function run.scenarios() may be saved as whole fitted models, predicted values (parameter estimates), or selected statistics. Each form of output requires different subsequent handling. The default path is shown by solid blue arrows. \cr
+
 Other functions not used exclusively for simulation are:
 \tabular{ll}{
   \code{\link{Enrm}} \tab expected numbers of individuals \eqn{n}, re-detections \eqn{r} and movements \eqn{m} \cr
@@ -54,7 +59,7 @@ Other functions not used exclusively for simulation are:
   \code{\link{saturation}} \tab expected detector saturation (trap success) \cr
   \code{\link{scenarioSummary}} \tab applies \code{Enrm}, \code{minnrRSE}, and other summaries to each scenario in a dataframe \cr
   \code{\link{optimalSpacing}} \tab optimal detector spacing by rule-of-thumb and simulation RSE(D-hat)\cr
-  \code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr
+  %\code{\link{scenariosFromStatistics}} \tab match specified \eqn{n}, \eqn{r} \cr
 }
 
 A vignette documenting the simulation functions is available at \href{https://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}. An Appendix in that vignette has code for various examples that should help get you started. 

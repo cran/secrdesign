@@ -1,3 +1,17 @@
+Changes in version 2.8.0 (2023-01-19)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() fit.function may be "ipsecr.fit"
+    o  run.scenarios() acquires argument 'CH.function'
+    o  functions to combine output from different executions 
+       of run.scenarios() (methods c, rbind for estimatetables, selectedstatistics)
+
+Other
+    o  suggests ipsecr
+    o  schematic figure in help page ?secrdesign
+    o  revised help page ?run.scenarios
+    o  run.scenarios() sets RCPP_PARALLEL_NUM_THREADS if ncores provided
+
 Changes in version 2.7.0 (2022-12-04)
 
 New features or changed behaviour of old functions

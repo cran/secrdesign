@@ -27,6 +27,7 @@
 ## 2022-01-20 2.6.0 ncores default NULL; multithreaded secr.fit
 ## 2022-10-18 trapset components may be function; trap.args argument
 ## 2022-10-21 general tidy up
+## 2022-12-28 allow fit.function = "ipsecr.fit"
 
 ###############################################################################
 wrapifneeded <- function (args, default) {
@@ -108,7 +109,10 @@ defaultextractfn <- function(x) {
                 unlist(lapply(split(x,gp,dropnullocc=TRUE), counts))
         }
     }
-    else if (inherits(x,'secr') & (!is.null(x$fit))) {
+    else if (
+        (inherits(x, 'secr') && !is.null(x$fit)) ||
+        (inherits(x, 'ipsecr') && x$code == 1)
+    ) {
         ## fitted model:
         ## default predictions of 'real' parameters
         out <- predict(x)
@@ -127,12 +131,10 @@ defaultextractfn <- function(x) {
 
 #####################
 makeCH <- function (scenario, trapset, full.pop.args, full.det.args, 
-    mask, multisession) {
+    mask, multisession, detfunction) {
     ns <- nrow(scenario)
-    
     with( scenario, {
         CH <- vector(mode = 'list', ns)
-
         for (i in 1:ns) {
             #####################
             ## retrieve data
@@ -141,6 +143,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             detarg <- full.det.args[[detindex[i]]]
 
             #####################
+            ## POPULATION
             ## override D, core, buffer
             if (inherits(mask, 'linearmask'))               ## force to linear...
                 poparg$model2D <- 'linear'
@@ -173,9 +176,12 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             pop <- do.call(sim.popn, poparg)
 
             #####################
+            ## CAPTHIST
             ## form dp for sim.capthist or sim.resight
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
+            
+
             if (detectfn[i] %in% 14:18) {
                 dp <- list(lambda0 = lambda0[i], sigma = sigma[i],
                            recapfactor = recapfactor[i])
@@ -189,26 +195,45 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
 
             #####################
             ## override det args as required
-            detarg$traps <- grid
-            detarg$popn <- pop
-            detarg$detectpar <- dp
-            detarg$detectfn <- detectfn[i]
-
-            if (!is.null(markocc(grid))) {
-                detarg$noccasions <- length(markocc(grid))
-                if (detarg$noccasions != noccasions[i])
-                    warning("length of markocc attribute overrides noccasions in scenario")
-            }
+            detarg$traps      <- grid
+            detarg$popn       <- pop
+            detarg$detectfn   <- detectfn[i]
+            detarg$noccasions <- noccasions[i]
+            if ("detectpar" %in% names(detarg))
+                detarg$detectpar  <- dp
             else
-                detarg$noccasions <- noccasions[i]
+                detarg$detparmat  <- dp
+            
+            ####################
+            ## function-specific kludges
+            
+            # force sighting to secr::sim.resight
+            if (sighting(grid)) {
+                detfunction <- "sim.resight"   
+            }
+            
+            if (detfunction == "simCH") {
+                CHfun <- ipsecr::simCH
+            }
+            else {
+                CHfun <- get(detfunction, envir = sys.frame())
+            }
+
+            if (detfunction == "sim.resight") {
+                if (!is.null(markocc(grid))) {
+                    detarg$noccasions <- length(markocc(grid))
+                    if (detarg$noccasions != noccasions[i])
+                        warning("length of markocc attribute overrides noccasions in scenario")
+                }
+            }
+            
             #####################
             ## simulate detection
 
-            if (sighting(grid)) {
-                CHi <- do.call(sim.resight, detarg)
-            }
-            else
-                CHi <- do.call(sim.capthist, detarg)
+            CHi <- do.call(CHfun, detarg)
+            
+            #####################
+            
             if (!is.na(nrepeats[i]))
                 attr(CHi, "n.mash") <- rep(NA, nrepeats[i])
             
@@ -263,13 +288,15 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
                 list(D = sum(D) * nrepeats, g0 = sum(g0*wt), sigma = sum(sigma*wt))
             }
         })
-        ## prepare arguments for secr.fit()
+        ## prepare arguments for secr.fit() or ipsecr.fit()
         fitarg$capthist <- CH
 
         if (byscenario) fitarg$ncores <- 1L
    
-        if (is.null(fitarg$model))
+        if (is.null(fitarg$model)) {
             fitarg$model <- defaultmodel(fitarg$CL, fitarg$detectfn)
+        }
+        
         if (fitarg$start[1] == 'true') {
             ## check to see if simple 'true' values will work
             ## requires intercept-only model for all parameters
@@ -278,26 +305,31 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
             vars <- unlist(lapply(lapply(model, terms), attr, 'term.labels'))
             if (fitfunction == "secr.fit") {
                 if (fitarg$CL) par$D <- NULL
+                if ((length(vars) != 0) && (fitarg$method == 'none')) {
+                    ## not yet ready for interspersed beta coef
+                    stop("method = 'none' requires full start vector for complex models")
+                }
+                if ('h2' %in% vars) par$pmix <- 0.5
             }
-            if ('h2' %in% vars) par$pmix <- 0.5
             fitarg$start <- lapply(par, '[', 1)   ## 2017-12-01 only first value
-            if ((length(vars) != 0) & (fitarg$method == 'none')) {
-                ## not yet ready for interspersed beta coef
-                stop("method = 'none' requires full start vector for complex models")
-            }
         }
-        fitarg$trace <- FALSE
         ##-------------------------------------------------------------------
         ## 2015-11-03 code for overdispersion adjustment of mark-resight data
         ## no simulations in first iteration; defer hessian
-        chatnsim <- fitarg$details$nsim
-        if (abs(chatnsim)>0) {
-            fitarg$details <- as.list(replace(fitarg$details, 'nsim', 0))
-            fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
+        if (fitfunction == "secr.fit") {
+            chatnsim <- fitarg$details$nsim
+            if (abs(chatnsim)>0) {
+                fitarg$details <- as.list(replace(fitarg$details, 'nsim', 0))
+                fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
+            }
         }
         ##-------------------------------------------------------------------
-
-        fit <- try(do.call(fitfunction, fitarg))
+        if (fitfunction == "secr.fit") {
+            fit <- try(do.call(secr.fit, fitarg))
+        }
+        else {
+            fit <- try(do.call(ipsecr::ipsecr.fit, fitarg))
+        }
 
         ##-------------------------------------------------------------------
         ## code for overdispersion adjustment of mark-resight data
@@ -330,6 +362,8 @@ getoutputtype <- function (output) {
     outputtype <-
         if (inherits(typical, 'secr'))
             'secrfit'
+        else if (inherits(typical, 'ipsecr'))
+            'ipsecrfit'
         else if (inherits(typical, 'summary.secr'))
             'secrsummary'
         else if (inherits(typical, 'data.frame')) {
@@ -378,9 +412,10 @@ run.scenarios <- function (
     xsigma = 4,
     nx = 32, 
     pop.args, 
+    CH.function = c("sim.capthist", "simCH"),
     det.args, 
     fit = FALSE, 
-    fit.function = "secr.fit",
+    fit.function = c("secr.fit", "ipsecr.fit"),
     fit.args, 
     chatnsim = 0, 
     extractfn = NULL, 
@@ -405,9 +440,8 @@ run.scenarios <- function (
             }
             trapset <- mapply (do.call, trapset, trap.args, SIMPLIFY = FALSE)
         }
-        # browser()
         CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
-                     fitarg$mask, multisession)
+                     fitarg$mask, multisession, CH.function)
        
         processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
     }
@@ -415,7 +449,7 @@ run.scenarios <- function (
     runscenario <- function(x) {
         if (ncores>1 && byscenario) {
             ## distribute replicates over cluster only if byscenario
-            out <- parLapply(clust, 1:nrepl, onesim, scenario = x)
+            out <- parallel::parLapply(clust, 1:nrepl, onesim, scenario = x)
         }
         else {
             out <- lapply(1:nrepl, onesim, scenario = x)
@@ -429,11 +463,16 @@ run.scenarios <- function (
     ## record start time etc.
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
+    
+    # not forcing match.arg for CH.function allows user function
+    CH.function <- CH.function[1]
     fit.function <- match.arg(fit.function)
+    
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    if (is.null(ncores)) {
-        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
-    }
+    # if (is.null(ncores)) {
+    #     ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    # }
+    ncores <- secr::setNumThreads(ncores)   ## 2022-12-29
     if (byscenario && (ncores > nrow(scenarios)))
         stop ("when allocating by scenario, ncores should not exceed number of scenarios")
     if (multisession & !anyDuplicated(scenarios$scenario))
@@ -485,6 +524,7 @@ run.scenarios <- function (
         warning("single-catch traps violate independence assumption for nrepeats > 1")
 
     ##---------------------------------------------
+    ## POPULATION ARGS
     ## allow user changes to default sim.popn arguments
     default.args <- as.list(args(sim.popn))[1:12]
     default.args$model2D  <- eval(default.args$model2D)[1]   ## 2014-09-03
@@ -493,35 +533,62 @@ run.scenarios <- function (
     full.pop.args <- fullargs (pop.args, default.args, scenarios$popindex)
 
     ##---------------------------------------------
+    ## CAPTHIST ARGS
     ## allow user changes to default sim.capthist or sim.resight arguments
-    if (sight)
-        default.args <- as.list(args(sim.resight))[c(2,4:11)]  ## drop traps & ... argument
-    else
-        default.args <- as.list(args(sim.capthist))[1:15]
+    if (CH.function == "simCH") {
+        if (!requireNamespace("ipsecr")) {
+            stop ("requires package ipsecr; please install")
+        }
+        CHfun <- ipsecr::simCH
+    }
+    else {
+        CHfun <- get(CH.function, envir = sys.frame())
+    }
+    default.args <- as.list(formals(CHfun))
+    default.args[["..."]] <- NULL   # not relevant
+    # if (sight)
+    #     default.args <- as.list(args(sim.resight))[c(2,4:11)]  ## drop traps & ... argument
+    # else
+    #     default.args <- as.list(args(sim.capthist))[1:15]
 
     if (missing(det.args)) det.args <- NULL
     det.args <- wrapifneeded(det.args, default.args)
     full.det.args <- fullargs (det.args, default.args, scenarios$detindex)
 
     ##---------------------------------------------
+    ## FIT ARGS
     ## allow user changes to default fit.function arguments
     if (fit.function == 'secr.fit') {
-        default.args <- as.list(args(secr.fit))[1:21]
-        default.args$biasLimit <- NA   ## never check
-        default.args$verify <- FALSE   ## never check
-        default.args$start <- "true"   ## known values
-        default.args$detectfn <- 0     ## halfnormal
-        default.args$details <- list(nsim = 0)
+        default.args <- as.list(formals(secr.fit))
+        default.args[["..."]] <- NULL   # not relevant
+        default.args$verify    <- FALSE   ## never check
+        default.args$start     <- "true"  ## known values
+        default.args$detectfn  <- 0       ## halfnormal
+        default.args$biasLimit <- NA      ## never check
+        default.args$details   <- list(nsim = 0)
+        default.args$trace     <- FALSE
+    }
+    else if (fit.function == 'ipsecr.fit') {
+        if (!requireNamespace("ipsecr")) stop ("requires package ipsecr; please install")
+        default.args <- as.list(formals(ipsecr::ipsecr.fit))
+        default.args[["..."]] <- NULL   # not relevant
+        default.args$verify   <- FALSE    ## never check
+        default.args$start    <- "true"   ## known values
+        default.args$detectfn <- 0        ## halfnormal
+        default.args$proxyfn  <- ipsecr::proxy.ms
+        default.args$verbose  <- FALSE
     }
     else stop ("unrecognised fit function")
     if (missing(fit.args)) fit.args <- NULL
     fit.args <- wrapifneeded(fit.args, default.args)
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
-    ## corrected 2016-09-28, 2017-05-23
-    for (i in 1:length(full.fit.args))
+    if (fit.function == "secr.fit") {
+        for (i in 1:length(full.fit.args))
         full.fit.args[[i]]$details$nsim <- replace(full.fit.args$details,'nsim',chatnsim)
+    }
     
     ##--------------------------------------------
+    ## MASKS
     ## construct masks as required
     if (missing(maskset)) {
         trapsigma <- scenarios[, c('trapsindex', 'sigma'), drop = FALSE]
@@ -587,16 +654,15 @@ run.scenarios <- function (
     tmpscenarios <- split(scenarios, scenarios$scenario)
     if (ncores > 1 && byscenario) {
         list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
-        clust <- makeCluster(ncores, methods = TRUE)
-        clusterSetRNGStream(clust, seed)
-        on.exit(stopCluster(clust))
-        output <- parLapply(clust, tmpscenarios, runscenario)
+        clust <- parallel::makeCluster(ncores, methods = TRUE)
+        parallel::clusterSetRNGStream(clust, seed)
+        on.exit(parallel::stopCluster(clust))
+        output <- parallel::parLapply(clust, tmpscenarios, runscenario)
     }
     else {
         set.seed (seed)
         output <- lapply(tmpscenarios, runscenario)
     }
-
     ##-------------------------------------------
     ## tidy output
     outputtype <- getoutputtype(output)
@@ -617,8 +683,10 @@ run.scenarios <- function (
         xsigma    = xsigma,
         nx        = nx,
         pop.args  = pop.args,
+        CH.function = CH.function,
         det.args  = det.args,
         fit       = fit,
+        fit.function = fit.function,
         fit.args  = fit.args,
         extractfn = extractfn,
         seed      = seed,
@@ -643,7 +711,7 @@ run.scenarios <- function (
 fit.models <- function (
     rawdata, 
     fit = FALSE, 
-    fit.function = "secr.fit", 
+    fit.function = c("secr.fit", "ipsecr.fit"),
     fit.args, 
     chatnsim = 0, 
     extractfn = NULL,
@@ -707,13 +775,15 @@ fit.models <- function (
 
     trapset <- rawdata$trapset
     maskset <- rawdata$maskset
+    
     ## record start time etc.
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    if (is.null(ncores)) {
-        ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
-    }
+    # if (is.null(ncores)) {
+    #     ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    # }
+    ncores <- secr::setNumThreads(ncores)   ## 2022-12-29
     if (byscenario & (ncores > nrow(scenarios))) {
         stop ("ncores exceeds number of scenarios")
     }
@@ -728,11 +798,20 @@ fit.models <- function (
     ## allow user changes to default arguments
     if (fit.function == 'secr.fit') {
         default.args <- as.list(args(secr.fit))[1:21]
-        default.args$biasLimit <- NA   ## never check
-        default.args$verify <- FALSE   ## never check
-        default.args$start <- "true"   ## known values
-        default.args$detectfn <- 0     ## halfnormal
-        default.args$details <- list(nsim = 0)
+        default.args$biasLimit <- NA       ## never check
+        default.args$verify    <- FALSE    ## never check
+        default.args$start     <- "true"   ## known values
+        default.args$detectfn  <- 0        ## halfnormal
+        default.args$details   <- list(nsim = 0)
+        default.args$trace     <- FALSE
+    }
+    else if (fit.function == 'ipsecr.fit') {
+        if (!requireNamespace("ipsecr")) stop ("requires package ipsecr; please install")
+        default.args <- as.list(formals(ipsecr::ipsecr.fit))[1:16]
+        default.args$proxyfn <- ipsecr::proxy.ms
+        default.args$verify  <- FALSE   ## never check
+        default.args$start   <- "true"  ## known values
+        default.args$verbose <- FALSE
     }
     else stop ("unrecognised fit function")
 
@@ -749,12 +828,6 @@ fit.models <- function (
             10 ^ trunc(log10(nfit)+1)
         scenarios <- scenarios[order(scenarios$scenario),]
         rownames(scenarios) <- 1:nrow(scenarios)
-
-        # mi<- sapply(fit.args, '[[', "maskindex")
-        # if (any(!is.null(mi)) {
-        #     scenarios$maskindex <- rep(1, nrow)
-        #     scenarios$maskindex[!is.null(mi)] <- mi
-        # }
 
     }
     full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex)
@@ -793,9 +866,9 @@ fit.models <- function (
 
     if (ncores > 1 && byscenario) {
         list(...)    ## ensures promises evaluated see parallel vignette 2015-02-02
-        clust <- makeCluster(ncores, methods = TRUE)
-        on.exit(stopCluster(clust))
-        output <- parLapply(clust, tmpscenarios, runscenario)
+        clust <- parallel::makeCluster(ncores, methods = TRUE)
+        on.exit(parallel::stopCluster(clust))
+        output <- parallel::parLapply(clust, tmpscenarios, runscenario)
     }
     else {
         output <- lapply(tmpscenarios, runscenario)

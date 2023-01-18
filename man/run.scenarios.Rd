@@ -6,7 +6,7 @@
 
 \description{
 
-This function performs simulations to predict the precision of abundance
+This function performs simulations to predict the precision of density and other
 estimates from simple 1-session SECR designs. Scenarios are specified
 via an input dataframe that will usually be constructed with
 \code{\link{make.scenarios}}. Each scenario comprises an index to a detector layout,
@@ -19,11 +19,6 @@ may comprise an actual field design input with \code{\link{read.traps}} or
 Examples. Even a single layout must be presented as a component of a
 list (e.g., \code{list(make.grid())}).
 
-If \code{byscenario = TRUE} then by default each scenario will be run in a separate worker
-process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}). The number of scenarios should not exceed the available number of cores (set by the 'ncores' argument or a prior call to `setNumThreads`).
-
-If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be set with `setNumThreads`.
-
 Alternative approaches are offered for predicting precision. Both start
 by generating a pseudorandom dataset under the design using the
 parameter values for a particular scenario. The first estimates the
@@ -31,19 +26,20 @@ parameter values and their standard errors from each dataset by
 maximizing the full likelihood, as usual in \code{secr.fit}. The second
 takes the short cut of computing variances and SE from the Hessian
 estimated numerically at the known expected values of the parameters,
-without maximizing the likelihood. Set \code{method = "none"} for this
-shortcut.
+without maximizing the likelihood. Set \code{method = "none"} in fit.args 
+for this shortcut.
 
 }
 
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, det.args, fit = FALSE, fit.function = "secr.fit", 
+    pop.args, CH.function = c("sim.capthist", "simCH"), det.args, 
+    fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
     ncores = NULL, byscenario = FALSE, seed = 123, trap.args, ...)
 
-fit.models(rawdata, fit = FALSE, fit.function = "secr.fit", 
+fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
     scen, repl, ...)
 }
@@ -59,6 +55,7 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
   to maskset)}
   \item{pop.args}{list of named arguments to
   \code{\link[secr]{sim.popn}} (optional)} 
+  \item{CH.function}{character name of function to simulate capthist}
   \item{det.args}{list of named arguments to
   \code{\link[secr]{sim.capthist}} (optional)} 
   \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
@@ -110,22 +107,50 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
   
   Using \code{extractfn = summary} has the advantage of allowing both model fits and raw statistics to be extracted from one set of simulations. However, this approach requires an additional step to retrieve the desired numeric results from each replicate (see \code{\link{count.summary}} and \code{\link{predict.summary}}).
 
-  From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
+\subsection{Parallel processing}{  
+  If \code{byscenario = TRUE} then by default each scenario will be run in a separate worker
+process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}). The number of scenarios should not exceed the available number of cores (set by the 'ncores' argument or a prior call to `setNumThreads`).
+
+If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be preset with `setNumThreads`. If \code{ncores} is provided then the environment variable RCPP_PARALLEL_NUM_THREADS is reset. The default behaviour of the fitting functions (secr.fit, ipsecr.fit) is to use this value (unless specified in fit.args).
 
   When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link{clusterSetRNGStream}}).
+
+For \code{ncores > 1} it pays to keep an eye on the processes from the
+  Performance page of Windows Task Manager (<ctrl><alt><del>), or `top' in
+  linux OS. If you interrupt \code{run.scenarios} (<Esc> from Windows)
+  you may occasionally find some processes do not terminate and have to
+  be manually terminated from the Task Manager - they appear as
+  Rscript.exe on the Processes page.
   
-  From 2.7.0, each component of `trapset' may be a function that constructs a detector layout. This allows layouts to be constructed dynamically at the time each capthist is generated; arguments of each function are provided in the `trap.args' list. The primary purpose is to allow systematic grids, laceworks etc. to be constructed with a unique random origin for each replicate. The `maskset' argument must be provided - it should cover all potential layouts, regardless of origins.
+}
+
+\subsection{Alternate functions for simulation and fitting}{
+
+The default is to use functions \code{\link{sim.capthist}} and \code{\link{secr.fit}} from \pkg{secr}. Either may be substituted by the corresponding function (\code{\link[ipsecr]{simCH}} or \code{\link[ipsecr]{ipsecr.fit}}) from package \pkg{ipsecr} if that has been installed.
+
+}
+
+\subsection{Miscellaneous}{
+
+From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
   
-  A summary method is provided (see
+From 2.7.0, each component of `trapset' may be a function that constructs a detector layout. This allows layouts to be constructed dynamically at the time each capthist is generated; arguments of each function are provided in the `trap.args' list. The primary purpose is to allow systematic grids, laceworks etc. to be constructed with a unique random origin for each replicate. The `maskset' argument must be provided - it should cover all potential layouts, regardless of origins.
+  
+In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to select a subset of datasets for model fitting.
+  
+}
+  
+\subsection{Mark-resight}{  \code{chatnsim} controls an additional quasi-likelihood model step to adjust for overdispersion of sighting counts. No adjustment happens when \code{chatnsim = 0}; otherwise \code{abs(chatnsim)} gives the number of simulations to perform to estimate overdispersion. If \code{chatnsim < 0} then the quasilikelihood is used only to re-estimate the variance at the previous MLE (method = "none").
+}
+
+
+ \subsection{Further processing}{A summary method is provided (see
   \code{\link{summary.secrdesign}}). It is usually necessary to process
   the simulation results further with \code{\link{predict.fittedmodels}}
   and/or \code{\link{select.stats}} before summarization.
+  }
   
-  In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to select a subset of datasets for model fitting.
-  
-  \code{chatnsim} controls an additional quasi-likelihood model step to adjust for overdispersion of sighting counts. No adjustment happens when \code{chatnsim = 0}; otherwise \code{abs(chatnsim)} gives the number of simulations to perform to estimate overdispersion. If \code{chatnsim < 0} then the quasilikelihood is used only to re-estimate the variance at the previous MLE (method = "none").
-
 }
 
 \value{
@@ -144,8 +169,10 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
   \item{xsigma}{from input}
   \item{nx}{from input}
   \item{pop.args}{from input}
+  \item{CH.function}{from input}
   \item{det.args}{from input}
   \item{fit}{from input}
+  \item{fit.function}{from input}
   \item{fit.args}{from input}
   \item{extractfn}{function used to extract statistics from each
     simulation}
@@ -169,14 +196,6 @@ fit.models(rawdata, fit = FALSE, fit.function = "secr.fit",
 
 100 ha = 1 km^2.
 
-
-For \code{ncores > 1} it pays to keep an eye on the processes from the
-  Performance page of Windows Task Manager (<ctrl><alt><del>), or `top' in
-  linux OS. If you interrupt \code{run.scenarios} (<Esc> from Windows)
-  you may occasionally find some processes do not terminate and have to
-  be manually terminated from the Task Manager - they appear as
-  Rscript.exe on the Processes page.
-
 fit.function = 'openCR.fit' was deprecated from 2.5.8 and has been removed.
   
 }
@@ -186,16 +205,45 @@ Murray Efford
 }
 
 \seealso{
-  \code{\link{predict.fittedmodels}},
-  \code{\link{scenarioSummary}}, 
   \code{\link{select.stats}},
+  
   \code{\link{summary.secrdesign}},
+  
+  \code{\link{summary.estimatetables}},
+  
   \code{\link{summary.selectedstatistics}},
+  
+
+  Miscellaneous --
+  
+  \code{\link{predict.fittedmodels}},
+  
+  \code{\link{scenarioSummary}}, 
+  
   \code{\link{count.summary}},
-  \code{\link{predict.summary}},
+  
+  \code{\link{predict.summary}}
+  
+  
+  \pkg{secr} functions used internally --
+  
   \code{\link[secr]{sim.popn}},
+  
   \code{\link[secr]{sim.capthist}},
+  
   \code{\link[secr]{secr.fit}}
+  
+  
+  To combine output --
+  
+  \code{\link{rbind.estimatetables}},
+  
+  \code{\link{rbind.selectedstatistics}},
+  
+  \code{\link{c.estimatetables}},
+  
+  \code{\link{c.selectedstatistics}}
+  
 }
 
 \examples{

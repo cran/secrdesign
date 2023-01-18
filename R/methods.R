@@ -380,6 +380,7 @@ summary.selectedstatistics <- function (object,
         out <- list(header = header(object), OUTPUT = tmp)
         # 2016-09-23 moved inside this block
         names(out$OUTPUT) <- as.character(unique(object$scenarios$scenario))
+        names(out$OUTPUT) <- names(object$output)
         
     }
     ## array output
