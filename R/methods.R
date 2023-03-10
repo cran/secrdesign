@@ -310,7 +310,7 @@ summary.selectedstatistics <- function (object,
     if (length(fields) == 1)
         if (tolower(fields) == 'all')
             fields <- c('n', 'mean', 'sd', 'se', 'min', 'max', 'lcl', 'ucl', 'q025',
-                        'median', 'q975', 'rms')
+                        'median', 'q975', 'rms', 'var')
     z      <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     alpha1 <- 0.025
     alpha3 <- 0.975
@@ -338,10 +338,11 @@ summary.selectedstatistics <- function (object,
             ucl  <- mean + z * se
             q    <- quantile(x, na.rm = T, prob = c(alpha1, 0.5, alpha3))
             rms  <- mean(x^2, na.rm = T)^0.5
-            tmp  <- c(n, mean, sd, se, minx, maxx, lcl, ucl, q, rms)
+            var  <- var(x, na.rm = T)
+            tmp  <- c(n, mean, sd, se, minx, maxx, lcl, ucl, q, rms, var)
             tmp[is.nan(tmp)] <- NA
             names(tmp) <- c('n', 'mean', 'sd', 'se', 'min', 'max', 'lcl', 'ucl', q1tag,
-                            'median', q3tag, 'rms')
+                            'median', q3tag, 'rms', 'var')
             tmp
         }
         valstring <- function (slist) {
@@ -390,24 +391,27 @@ summary.selectedstatistics <- function (object,
         n      <- apply(outputarray, 2:nd, function(y) sum(!is.na(y)))
         mean   <- apply(outputarray, 2:nd, mean, na.rm = T)
         rms    <- apply(outputarray, 2:nd, function (x) mean(x^2, na.rm = T)^0.5)
+        var    <- apply(outputarray, 2:nd, var, na.rm = T)
         sd     <- apply(outputarray, 2:nd, sd, na.rm = T)
         se     <- sd/n^0.5
         minx   <- apply(outputarray, 2:nd, minNA)
         maxx   <- apply(outputarray, 2:nd, maxNA)
         q      <- apply(outputarray, 2:nd, quantile, na.rm = T, prob =
                         c(alpha1, 0.5, alpha3))
-        out    <- list(n = n,
-                       mean = mean,
-                       se = se,
-                       sd = sd,
-                       min = minx,
-                       max = maxx,
-                       lcl = mean - z * se,
-                       ucl = mean + z * se,
-                       rms = rms,
-                       q1 = apply(q,2:nd,'[',1),
-                       median = apply(q,2:nd,'[',2),
-                       q3 = apply(q,2:nd,'[',3))
+        out    <- list(
+            n = n,
+            mean = mean,
+            se = se,
+            sd = sd,
+            min = minx,
+            max = maxx,
+            lcl = mean - z * se,
+            ucl = mean + z * se,
+            rms = rms,
+            var = var,
+            q1 = apply(q,2:nd,'[',1),
+            median = apply(q,2:nd,'[',2),
+            q3 = apply(q,2:nd,'[',3))
         names(out)[names(out)=='q1'] <- q1tag
         names(out)[names(out)=='q3'] <- q3tag
         qi <- grepl('q', fields)

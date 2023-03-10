@@ -4,9 +4,10 @@ year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
 vers <- paste("R package version", meta$Version)
 url <- "https://CRAN.R-project.org/package=secrdesign"
 
-citEntry(entry="Manual",
+bibentry(
+    bibtype = "Manual",
     title = "secrdesign: Sampling Design for Spatially Explicit Capture-Recapture",
-    author = personList(as.person("Murray Efford")),
+    author = c(person("Murray", "Efford")),
     year = year,
     note = vers,
     url = url,

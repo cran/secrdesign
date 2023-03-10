@@ -48,7 +48,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     extrafields <- FALSE
 
     if (!all(as.character(scenarios$detectfn) %in% 
-             c(as.character(c(0,1,2,14:18)), 'HN','HR','EX','HHN', 'HEX', 'HHR', 'HCG','HAN')))
+             c(as.character(c(0,1,2,14:19)), 'HN','HR','EX','HHN', 'HEX', 'HHR', 'HCG','HAN','HVP')))
         stop ("scenarioSummary requires hazard detection function HHN, HEX etc. (HN, EX approximated)")
     ##--------------------------------------------
     ## preprocess inputs
@@ -143,7 +143,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         }
         if (is.character(detectfn))
             detectfn <- match.arg(detectfn)
-        detectfn <- secr:::valid.detectfn(detectfn, 14:18)
+        detectfn <- secr:::valid.detectfn(detectfn, 14:19)
         cellarea <- attr(mask, 'area') 
         dk <- edist(tr, mask)                                             # K x M
         if (detectfn == 14)
@@ -177,7 +177,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     onescenario <- function (scenario) {
         traps <- trapset[[scenario$trapsindex]]
         mask <- maskset[[scenario$maskindex]]
-        detectfn <- secr:::valid.detectfn (scenario$detectfn, c(0,1,2,14:18))
+        detectfn <- secr:::valid.detectfn (scenario$detectfn, c(0,1,2,14:19))
         detectpar = list(g0 = scenario$g0, lambda0 = scenario$lambda0, sigma = scenario$sigma, z = scenario$z)
         dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 1 to 15, 2 to 16
         detectfn <- dfc$detectfn

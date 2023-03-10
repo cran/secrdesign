@@ -12,7 +12,7 @@ Lambda <- function (traps, mask, detectpar, noccasions, detectfn =
         stop ("Lambda does not accept multi-session traps or mask")
     if (is.character(detectfn))
         detectfn <- match.arg(detectfn)
-    detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:18))
+    detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:19))
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
     dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 2 to 16
     detectfn <- dfc$detectfn

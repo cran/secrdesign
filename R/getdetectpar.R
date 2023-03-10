@@ -9,7 +9,7 @@ getdetectpar <- function (D, C, sigma = NULL, k = 0.5, ...) {
     args$D <- D
     if (is.null(sigma)) {
         if (!is.null(args$detectfn))
-            if (secr:::valid.detectfn(args$detectfn, valid = 14:18) != 14)
+            if (secr:::valid.detectfn(args$detectfn, valid = 14:19) != 14)
                 stop ("must specify sigma for detectfn not 'HHN'")
         sigma <- 100 * k / sqrt(D)
     }

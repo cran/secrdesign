@@ -1,3 +1,20 @@
+Changes in version 2.8.2 (2023-03-11)
+
+New features or changed behaviour of old functions
+    o  none
+    
+Other
+    o  example time reduced for CRAN
+
+Changes in version 2.8.1 (2023-03-10)
+
+New features or changed behaviour of old functions
+    o  fit option 'design' (assumes detection model cf Fewster & Buckland 2004)
+    o  estimateArray() and estimateSummary() new functions
+
+Other
+    o  summary field 'var'
+
 Changes in version 2.8.0 (2023-01-19)
 
 New features or changed behaviour of old functions

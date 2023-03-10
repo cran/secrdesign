@@ -44,7 +44,7 @@ header(object)
   \item{x}{object of class `selectedstatistics' from
     \code{run.scenarios}}
   \item{scenarios}{integer indices of scenarios to plot (all plotted if not specified)}
-  \item{statistic}{integer or character indices if the statistics in x for which
+  \item{statistic}{integer or character indices of the statistics in x for which
     histograms are requested}
   \item{refline}{logical; if TRUE a reference line is plotted at the
   true value of a parameter}
@@ -61,7 +61,7 @@ header(object)
   simulations. Otherwise the header alone is returned.
   
   \code{fields} is a vector of any selection from c(`n', `mean', `sd',
-  `se', `min', `max', `lcl', `ucl', `median', `q', `rms'), or the
+  `se', `min', `max', `lcl', `ucl', `median', `q', `rms', `var'), or the
   character value `all'.
 
   Field `q' provides 1000 \code{alpha/2} and 1000[1 - \code{alpha/2}]
@@ -85,6 +85,10 @@ header(object)
 
   For type = `CI' the statistics must include `estimate', `lcl' and
   `ucl' (or `beta', `lcl' and `ucl' if outputtype = `coef').
+  
+  \code{\link{estimateSummary}} is a simpler approach that provides full output 
+  for models with groups or multiple sessions simulated in 
+  \code{\link{run.scenarios}} with extractfn predict or coef).
   
 }
 
@@ -110,6 +114,7 @@ header(object)
   \code{\link{make.array}},
   \code{\link{select.stats}}
   \code{\link{validate}}
+  \code{\link{estimateSummary}}
 
 }
 

@@ -58,10 +58,10 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   \item{CH.function}{character name of function to simulate capthist}
   \item{det.args}{list of named arguments to
   \code{\link[secr]{sim.capthist}} (optional)} 
-  \item{fit}{logical; if TRUE a model is fitted with \code{secr.fit}, otherwise
-  data are generated but no model is fitted}
+  \item{fit}{logical; if TRUE a model is fitted with \code{fit.function}, otherwise
+  data are generated but no model is fitted \cr (see also Design-only statistics in Details)}
   \item{fit.function}{character name of function to use for model fitting}
-  \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} (optional)}
+  \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} or \code{\link[ipsecr]{ipsecr.fit}} (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
@@ -128,6 +128,23 @@ For \code{ncores > 1} it pays to keep an eye on the processes from the
 \subsection{Alternate functions for simulation and fitting}{
 
 The default is to use functions \code{\link{sim.capthist}} and \code{\link{secr.fit}} from \pkg{secr}. Either may be substituted by the corresponding function (\code{\link[ipsecr]{simCH}} or \code{\link[ipsecr]{ipsecr.fit}}) from package \pkg{ipsecr} if that has been installed.
+
+}
+
+\subsection{Design-only statistics}{
+
+Designs for distance sampling were evaluated by Fewster and Buckland (2004) by computing statistics from simulated detections without fitting a model to estimate the detection parameters. An analogous procedure for SECR is implemented by setting \code{fit = 'design'}. A new default extractfn (designextractfn) computes the effective sampling area with the \pkg{secr} function \code{\link{pdot}} and returns a vector of values -
+
+\tabular{lll}{
+  n   \tab \tab number of individuals detected \cr
+  r   \tab \tab number of recaptures \cr
+  esa \tab \tab effective sampling area, given the known detection parameters \cr
+  D   \tab \tab D = n/esa \cr
+}
+
+The resulting simulation object is of type 'selectedstatistics' for which the summary method works as usual.
+
+A similar effect may be achieved by providing a custom extractfn and passing arguments to it via the dots argument of \code{run.scenarios}.
 
 }
 
@@ -204,6 +221,18 @@ fit.function = 'openCR.fit' was deprecated from 2.5.8 and has been removed.
 Murray Efford
 }
 
+
+\references{
+
+  Fewster, R. M. and Buckland, S. T. 2004. Assessment of distance
+  sampling estimators. In: S. T. Buckland, D. R. Anderson,
+  K. P. Burnham, J. L. Laake, D. L. Borchers and L. Thomas (eds)
+  \emph{Advanced distance sampling}. Oxford University Press, Oxford,
+  U. K. Pp. 281--306.
+  
+}
+
+
 \seealso{
   \code{\link{select.stats}},
   
@@ -212,6 +241,8 @@ Murray Efford
   \code{\link{summary.estimatetables}},
   
   \code{\link{summary.selectedstatistics}},
+  
+  \code{\link{estimateSummary}}
   
 
   Miscellaneous --
@@ -260,6 +291,15 @@ summary(tmp1)
 \dontrun{
 
 setNumThreads(7)
+
+##########################################
+# new summary method (secrdesign >= 2.8.1)
+# assumes fit = TRUE, extractfn = predict
+
+tmp2 <- run.scenarios(nrepl = 10, trapset = traps1, scenarios = scen1,
+    fit = TRUE, extractfn = predict)
+estimateSummary(tmp2, format = "data.frame", 
+    cols = c('scenario', 'noccasions'))
 
 ###########################
 ## 2-phase example

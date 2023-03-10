@@ -7,7 +7,7 @@ importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
            "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
 importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",
            "terms", "uniroot", "optimize", "approx", "dist", "pnorm", "symnum",
-           "median")
+           "median", "sd")
 
 importFrom("utils", 
     "flush.console", 
@@ -21,6 +21,8 @@ importFrom ("Rcpp",
     "evalCpp")
 
 # Other packages
+
+importFrom ("abind", "adrop")
 
 importFrom("sf",
     "st_as_sf",
@@ -63,6 +65,9 @@ export (GApenfn)
 export (compactSample)
 export (Qpm)
 export (En2)
+
+export (estimateArray)
+export (estimateSummary)
 
 S3method (plot, optimalSpacing)
 S3method (print, optimalSpacing)

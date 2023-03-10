@@ -15,7 +15,7 @@
 dfcast <- function (detectfn = 'HN', detectpar=list(g0 = 0.2, sigma = 25, 
     z = NULL, w = NULL), matchsigma = 1, warning = TRUE) {
     
-    if (!(detectfn %in% 14:18) ) {
+    if (!(detectfn %in% 14:19) ) {
         lambda0 <- -log(1- detectpar$g0)
         cast <- function (sigma2) {
             if (detectfn == 0)
@@ -52,7 +52,7 @@ defaultmodel <- function (CL, detectfn) {
         model <- list(b0 = ~ 1, b1 = ~ 1)
     else if (detectfn %in% c(10:11))
         model <- list(beta0 = ~ 1, beta1 = ~ 1)
-    else ## detectfn %in% c(14:18))
+    else ## detectfn %in% c(14:19))
         model <- list(lambda0 = ~ 1, sigma = ~ 1)
     if (!is.null(CL) && !CL) model <- c(list(D = ~1), model)
     model
