@@ -2,6 +2,7 @@
 ## package 'secrdesign'
 ## rbind.estimatetables.R
 ## 2023-01-12 work in progress
+## 2023-08-30 c.estimatetables revised
 #############################################################################
 
 rbind.estimatetables <- function (..., deparse.level = 1) {
@@ -40,7 +41,7 @@ rbind.estimatetables <- function (..., deparse.level = 1) {
 rbind.selectedstatistics <- function (..., deparse.level = 1) {
     # combine 2 or more objects output from run.scenarios
     allargs <- list(...)
-    inputnames <- as.character(match.call(expand.dots=FALSE)$...) 
+    # inputnames <- as.character(match.call(expand.dots=FALSE)$...) 
     
     scenarios <- lapply(allargs, '[[', 'scenarios')
     headers <- lapply(allargs, header)
@@ -74,28 +75,28 @@ c.estimatetables <- function (...) {
     # combine 2 or more objects output from run.scenarios
     
     allargs <- list(...)
-    inputnames <- as.character(match.call(expand.dots=FALSE)$...) 
-    
+
+    headers   <- lapply(allargs, header)
     scenarios <- lapply(allargs, '[[', 'scenarios')
+    output    <- lapply(allargs, '[[', 'output') 
+    estnames  <- lapply(allargs, function(x)  names(x$output[[1]][[1]]))
+
+    # check scenario compatibility
     inputscen <- sapply(scenarios, nrow) 
-    headers <- lapply(allargs, header)
     names1 <- names(scenarios[[1]])
-    estnames <- lapply(allargs, function(x)  names(x$output[[1]][[1]]))
-    
     nruns <- length(scenarios)
-    if (nruns>1)
+    if (nruns>1) {
         for (i in 2:nruns) {
             if (any (names(scenarios[[i]] != names1))) stop ("differing columns in scenarios") 
         }
+    }
     
-    output <- lapply(allargs, '[[', 'output') 
-    temp <- allargs[[1]]
+    # construct output
+    temp <- allargs[[1]]   # inherit header from first object
     temp$scenarios <- do.call(rbind, scenarios)
-    temp$output <- do.call(c, output)
-    names(temp$output) <- paste0(rep(inputnames, inputscen), '.', names(temp$output))
-    
-    temp$proctime <- sum(sapply(allargs, '[[', 'proctime'))
-    temp$nrepl <- sum(sapply(allargs, '[[', 'nrepl'))
+    temp$output    <- do.call(c, output)
+    temp$proctime  <- sum(sapply(allargs, '[[', 'proctime'))
+    temp$nrepl     <- sapply(allargs, '[[', 'nrepl') # separate, not sum 2023-08-30
     temp
 }
 ###############################################################################
@@ -105,27 +106,28 @@ c.selectedstatistics <- function (...) {
     # combine 2 or more objects output from run.scenarios
     
     allargs <- list(...)
-    inputnames <- as.character(match.call(expand.dots=FALSE)$...) 
     
+    headers   <- lapply(allargs, header)
     scenarios <- lapply(allargs, '[[', 'scenarios')
-    inputscen <- sapply(scenarios, nrow) 
-    headers <- lapply(allargs, header)
-    names1 <- names(scenarios[[1]])
-    estnames <- lapply(allargs, function(x)  names(x$output[[1]][[1]]))
+    output    <- lapply(allargs, '[[', 'output') 
+    estnames  <- lapply(allargs, function(x)  names(x$output[[1]][[1]]))
     
+    # check scenario compatibility
+    inputscen <- sapply(scenarios, nrow) 
+    names1 <- names(scenarios[[1]])
     nruns <- length(scenarios)
-    if (nruns>1)
+    if (nruns>1) {
         for (i in 2:nruns) {
             if (any (names(scenarios[[i]] != names1))) stop ("differing columns in scenarios") 
         }
+    }
     
-    output <- lapply(allargs, '[[', 'output') 
+    # construct output
     temp <- allargs[[1]]
     temp$scenarios <- do.call(rbind, scenarios)
-    temp$output <- do.call(c, output)
-    names(temp$output) <- paste0(rep(inputnames, inputscen), '.', names(temp$output))
-    temp$proctime <- sum(sapply(allargs, '[[', 'proctime'))
-    temp$nrepl <- sum(sapply(allargs, '[[', 'nrepl'))
+    temp$output    <- do.call(c, output)
+    temp$proctime  <- sum(sapply(allargs, '[[', 'proctime'))
+    temp$nrepl     <- sapply(allargs, '[[', 'nrepl')
     temp
 }
 ###############################################################################

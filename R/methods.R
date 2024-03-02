@@ -192,6 +192,7 @@ dummyuserdist <- function (arg) {
 
 collapsemodel <- function (arg) {
     if ('model' %in% names(arg)) {
+        if (!is.list(arg[['model']])) arg[['model']] <- list(arg[['model']])
         arg[['model']] <-  secr:::model.string(arg[['model']], NULL)
     }
     arg
@@ -206,9 +207,14 @@ collapsesubarg <- function (arg,subarg) {
     arg
 }
 
-argdf <- function (args) {
+argdf <- function (args, nested = FALSE) {
     if (is.null(args))
         NULL
+    else if (nested) {
+        fi <- rep(1:length(args), sapply(args,length))
+        out <- do.call(rbind, lapply(args, argdf))
+        data.frame(fitindex = fi, out)
+    }
     else { 
         tmp <- lapply(args, dummyuserdist)
         tmp <- lapply(tmp, collapsemodel)
@@ -275,9 +281,14 @@ header <- function (object) {
 
     fi <- unique(object$scenarios$fitindex)
 
-    fitargs <- argdf(object$fit.args)
-    if (!is.null(fitargs))
-        fitargs <- data.frame(fitindex = fi, fitargs[fi,,drop = FALSE])
+    multifit <- object$fit == "multifit"
+    fitargs <- argdf(object$fit.args, nested = multifit)
+    if (!is.null(fitargs)) {
+        if (multifit)
+            fitargs <- fitargs[fitargs$fitindex %in% object$scenario$fitindex,,drop = FALSE]
+        else
+            fitargs <- data.frame(fitindex = fi, fitargs[fi,,drop = FALSE])
+    }
 
     list(call = object$call, starttime = object$starttime, proctime = object$proctime,
          constant = constant, varying = varying, pop.args = popargs, det.args = detargs,

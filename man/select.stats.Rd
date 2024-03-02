@@ -2,7 +2,7 @@
 \alias{select.stats}
 \alias{find.param}
 \alias{find.stats}
-  
+
 \title{ Select Statistics to Summarize }
 
 \description{

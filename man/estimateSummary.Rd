@@ -20,7 +20,7 @@ estimateArray(object)
 estimateSummary(object, parameter = "D", statistics = c("true", "nvalid", 
     "EST", "seEST", "RB", "seRB", "RSE", "RMSE", "rRMSE", "COV"), true,
     validrange = c(0, Inf), checkfields = c('estimate','SE.estimate'),
-    format = c('list', 'data.frame'), cols = NULL)
+    format = c('data.frame', 'list'), cols = NULL)
 
 }
 
@@ -104,9 +104,12 @@ If format = "data.frame" - a data frame with rows corresponding to group x scena
 \note{
 
 These functions were introduced in version 2.8.1. They may change in later versions. 
+The default format was changed to `data.frame' in 2.8.3.
 
 Results may be confusing when scenarios have group structure and groups 
 are not used in the fitted model.
+
+It is assumed that all scenarios (and all models in a multi-model fit) report the same parameters.
 
 }
 

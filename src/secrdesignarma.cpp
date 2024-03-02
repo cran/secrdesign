@@ -1,5 +1,7 @@
 /*
    External procedures for secrdesign package 2022-10-21
+ 
+   2023-09-15 better protection from divide-by-zero in Lambdacpp
 
 */
 
@@ -60,7 +62,9 @@ Rcpp::List Lambdacpp (
     // traps x mask hazard matrix
     arma::mat h = hazmatcpp(par, d, detectfn);
     
+    // column sums
     arma::rowvec sumhk = arma::sum(h, 0); 
+    // cast as Rcpp NumericVector
     Rcpp::NumericVector outsumhk = Rcpp::NumericVector(sumhk.begin(), sumhk.end());
 
     Rcpp::NumericVector outsumpk (1);
@@ -68,10 +72,15 @@ Rcpp::List Lambdacpp (
     outsumpk[0] = NA_REAL;
     outsumq2[0] = NA_REAL;
     
+    // column sums of squared elements
     arma::rowvec sumhk2 = arma::sum(arma::square(h), 0); 
-    // protect against 1/0
-    sumhk.replace(0, arma::datum::eps);
-    arma::rowvec sumq2 = sumhk2 / arma::square(sumhk);
+    
+    // protect against 1/0 - revised 2023-09-15
+    arma::rowvec sqsumhk = arma::square(sumhk);
+    sqsumhk.replace(0, arma::datum::eps);
+    arma::rowvec sumq2 = sumhk2 / sqsumhk;
+    // Rprintf("%8.6g sum(sumq2)\n", arma::accu(sumq2));
+
     outsumq2 = Rcpp::NumericVector(sumq2.begin(), sumq2.end());
     
     // multi

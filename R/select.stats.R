@@ -34,8 +34,8 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
   estname <- ""
   SEname <- ""
   if (object$outputtype %in% c('predicted', 'derived', 'regionN')) {
-    estname <- 'estimate'
-    SEname <- 'SE.estimate'
+      estname <- 'estimate'
+      SEname <- 'SE.estimate'
   }
   else if (object$outputtype %in% c('rawcounts')) {
         estname <- 'n'
@@ -48,11 +48,12 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     }
     #}
     for (i in 1:length(object$output)) {
-        typical <- object$output[[i]][[1]]  ## ith scenario, first replicate
+        # typical <- object$output[[i]][[1]]  ## ith scenario, first replicate
+        typical <- data.frame(object$output[[i]][[1]])  ## ith scenario, first replicate
         if (length(typical) > 0) break
     }
     if (length(typical) == 0) stop ("no results found")
-   
+ 
     stat0 <- names(typical)[sapply(typical, is.numeric)]
     if (missing(statistics)) {
         stat1 <- stat0
@@ -126,19 +127,18 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     uniqueScenarioIndex <- match(unique(object$scenarios$scenario), object$scenarios$scenario)
     fitIndex <- object$scenarios$fitindex[uniqueScenarioIndex]
     estimated <- sapply(fitIndex,
-                        function(x) {
-                            method <- if ('method' %in% names(object$fit.args))
-                                object$fit.args$method
-                            else
-                                object$fit.args[[x]]$method
-                            no <- object$fit & (method != 'none')
-                            ifelse(length(no) == 0, TRUE, no)
-                        }
-                        )
+        # require a fitted model with method != 'none'
+        # findarg new in 2.8.3 - see utility.R
+        function(x) {
+            ((is.logical(object$fit) && object$fit) || (object$fit %in% "multifit")) && 
+                (findarg(object$fit.args, 'method', x, 'default') != 'none')
+            
+        }
+    )
     if (missing(true)) {
-    splitScenarios <- split(object$scenarios, object$scenarios$scenario)
-    trueD <- sapply(splitScenarios, weighted, param='D')   ## vector length = number of scenarios
-
+        splitScenarios <- split(object$scenarios, object$scenarios$scenario)
+        trueD <- sapply(splitScenarios, weighted, param='D')   ## vector length = number of scenarios
+        
     if (object$outputtype == 'regionN') {
         true <- trueD
         true <- true * attr(object, 'regionsize')  ## for each scenario

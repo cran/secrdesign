@@ -37,11 +37,13 @@ run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     pop.args, CH.function = c("sim.capthist", "simCH"), det.args, 
     fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
-    ncores = NULL, byscenario = FALSE, seed = 123, trap.args, ...)
+    joinsessions = FALSE, ncores = NULL, byscenario = FALSE, seed = 123, 
+    trap.args, ...)
 
 fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
     scen, repl, ...)
+
 }
 
 \arguments{
@@ -58,13 +60,15 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   \item{CH.function}{character name of function to simulate capthist}
   \item{det.args}{list of named arguments to
   \code{\link[secr]{sim.capthist}} (optional)} 
-  \item{fit}{logical; if TRUE a model is fitted with \code{fit.function}, otherwise
-  data are generated but no model is fitted \cr (see also Design-only statistics in Details)}
+  \item{fit}{logical or character; if TRUE a model is fitted with \code{fit.function}, otherwise
+  data are generated but no model is fitted \cr 
+  (see also Multi-model fit and Design-only statistics in Details)}
   \item{fit.function}{character name of function to use for model fitting}
   \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} or \code{\link[ipsecr]{ipsecr.fit}} (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
+  \item{joinsessions}{logical; if TRUE function \code{\link{join}} is applied to multisession capthist}
   \item{ncores}{integer number of cores for parallel processing or NULL}
   \item{byscenario}{logical; if TRUE then each scenario is sent to a different core}
   \item{seed}{integer pseudorandom number seed}
@@ -128,6 +132,12 @@ For \code{ncores > 1} it pays to keep an eye on the processes from the
 \subsection{Alternate functions for simulation and fitting}{
 
 The default is to use functions \code{\link{sim.capthist}} and \code{\link{secr.fit}} from \pkg{secr}. Either may be substituted by the corresponding function (\code{\link[ipsecr]{simCH}} or \code{\link[ipsecr]{ipsecr.fit}}) from package \pkg{ipsecr} if that has been installed.
+
+}
+
+\subsection{Multi-model fit}{
+
+Multiple models may be fited to the same simulated data for multi-model inference. This requires both (i) `fit = "multifit"', and (ii) 'fit.args' should be a nested list (fit arguments within models within fit.index) with a separate specification for each model fit. See the vignette for examples.
 
 }
 

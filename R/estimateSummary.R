@@ -12,9 +12,9 @@ estimateArray <- function (object) {
     nrepl <- length(object$output[[1]])
     groups <- unique(object$scenarios$group)
     ngrp  <- max(1, length(groups))
-    
     typical <- object$output[[1]][[1]]
-    if(!is.data.frame(typical)) {
+    if (inherits(typical, "secrlist")) stop("estimateArray expects estimate table(s), not secrlist")
+    if(length(dim(typical))!=2) {
         groupnames <- if (length(typical) == ngrp) groups else names(typical)
         ngrp <- length(groupnames)
         typical <- typical[[1]]
@@ -22,15 +22,20 @@ estimateArray <- function (object) {
     else {
         ngrp <- 1
         groupnames <- 1
+        npar <- unique(unlist(lapply(object$output, sapply, nrow)))
+        if (length(npar)>1) stop("number of parameters varies among scenarios or replicates")
     }
+    typical <- data.frame(typical)  # convert matrix output from modelAverage
     # count actual tables per replicate of each scenario
     ntab <- sapply(object$output, 
-        function(x) if (is.data.frame(x[[1]])) 1 else length(x[[1]]))
+        function(x) {
+            if (length(dim(x[[1]]))==2) 1 else length(x[[1]])
+        })
     if (length(table(ntab)) > 1) 
         stop("varying number of estimatetables per scenario")
     if (ntab[1] > ngrp)
         warning("multiple tables per group")
-    num <- sapply(typical, is.numeric)
+    num <- sapply(typical, is.numeric)  # copes with matrix
     if (inherits(object, 'estimatetables')) {
         values <- unlist(object$output)
         values <- suppressWarnings(as.numeric(values))  # link text -> NA
@@ -56,16 +61,16 @@ estimateSummary <- function (object, parameter = 'D',
     statistics = c('true', 'nvalid', 'EST', 'seEST', 'RB', 
         'seRB', 'RSE', 'RMSE', 'rRMSE', 'COV'), true, validrange = c(0, Inf), 
     checkfields = c('estimate','SE.estimate'),
-    format = c('list', 'data.frame'), cols = NULL) {
-    
+    format = c('data.frame', 'list'), cols = NULL) {
     arr <- estimateArray(object)
     if (missing(true)) {
         # assumes groups, if present, are used in model
         # otherwise incompatible
-        true <- object$scenarios[,parameter] 
+        true <- if (parameter %in% names(object$scenarios))
+            object$scenarios[,parameter] 
+        else rep(NA, nrow(object$scenarios))  # 2023-04-15 for robustness
     }
     if (length(true) != prod(dim(arr)[3:4])) stop ("incompatible 'true' vector")
-    
     # check for out-of-range estimates
     validate <- function(x) {
         x1 <- as.numeric(x[checkfields])
@@ -78,7 +83,7 @@ estimateSummary <- function (object, parameter = 'D',
         warning("checkfields not found in object$output; check not performed")
     else
         arr <- aperm(apply(arr, c(1,3,4,5), validate), c(2,1,3,4,5))
-    
+
     # working subsets of data
     estcol <- c('estimate','SE.estimate')
     # switch for coef()
