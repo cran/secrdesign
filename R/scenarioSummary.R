@@ -242,6 +242,8 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         radius <- circular.r(p = 0.95, detectfn = detectfn, sigma = detectpar$sigma)
         out$detperHR <- trapsperHR (traps, radius)[1]  ## median detectors per 95% HR
         
+        out$k <- unname(kfn(c(out$D, out$sigma))['k'])   ## 2024-04-20
+        
         if (extrafields) {
             out <- c(out,
                      detperHR(traps, mask, detectfn = scenario$detectfn, detectpar, 
@@ -278,6 +280,7 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     else {
         output <- lapply(tmpscenarios, onescenario)
     }
+    
     output <- do.call(rbind, output)
     output <- as.data.frame(output)
     output

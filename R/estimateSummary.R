@@ -3,6 +3,7 @@
 ## estimateSummary.R
 ## 2023-02-25
 ## 2023-03-10 abind::adrop when no group in any scenario
+## 2024-03-14 check for NA
 ###############################################################################
 
 # Convert output (nested list of estimate tables) to array
@@ -22,6 +23,12 @@ estimateArray <- function (object) {
     else {
         ngrp <- 1
         groupnames <- 1
+        nulltypical <- typical
+        nulltypical[] <- NA
+        fillnull <- function (x) {
+            lapply(x, function(y) if (nrow(y)==0) nulltypical else y)
+        }
+        object$output <- lapply(object$output, fillnull)
         npar <- unique(unlist(lapply(object$output, sapply, nrow)))
         if (length(npar)>1) stop("number of parameters varies among scenarios or replicates")
     }
@@ -74,7 +81,8 @@ estimateSummary <- function (object, parameter = 'D',
     # check for out-of-range estimates
     validate <- function(x) {
         x1 <- as.numeric(x[checkfields])
-        if (!all(x1 >= validrange[1] & x1 <= validrange[2])) {
+        # is.na checked 2024-03-14
+        if (any(is.na(x1)) || !all(x1 >= validrange[1] & x1 <= validrange[2])) {
             x[] <- NA
         }
         x

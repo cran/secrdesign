@@ -86,43 +86,43 @@ designextractfn <- function(CH, ...) {
 ###############################################################################
 
 defaultextractfn <- function(x, ...) {
+    counts <- function(CH) {
+        ## for single-session CH
+        if (nrow(CH)==0) { ## 2015-01-24
+            if (sighting(traps(CH)))
+                c(n = 0, ndet = 0, nmov = 0, dpa = 0,
+                  unmarked=0, nonID = 0, nzero = 0)
+            else
+                c(n=0, ndet=0, nmov=0, dpa = NA, rse = NA, rpsv = NA)
+        }
+        else {
+            n <- nrow(CH)
+            ndet <- sum(abs(CH)>0)
+            r2 <- sum(abs(CH)) - n   ## 2020-01-28
+            nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+            ## detectors per animal
+            dpa <- if (length(dim(CH)) == 2)
+                mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+            else
+                mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+            if (sighting(traps(CH))) {
+                unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
+                nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
+                nzero <- sum(apply(abs(CH),1,sum) == 0)
+                c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
+                  unmarked=unmarked, nonID = nonID, nzero = nzero)
+            }
+            else {
+                c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)), rpsv = RPSV(CH, CC = TRUE))
+            }
+        }
+    }
     if (inherits(x, 'try-error')) {
         ## null output: dataframe of 0 rows and 0 columns
         data.frame()
     }
     else if (inherits(x, 'capthist')) {
         ## summarised raw data
-        counts <- function(CH) {
-            ## for single-session CH
-            if (nrow(CH)==0) { ## 2015-01-24
-                if (sighting(traps(CH)))
-                    c(n = 0, ndet = 0, nmov = 0, dpa = 0,
-                      unmarked=0, nonID = 0, nzero = 0)
-                else
-                    c(n=0, ndet=0, nmov=0, dpa = NA)
-            }
-            else {
-                n <- nrow(CH)
-                ndet <- sum(abs(CH)>0)
-                r2 <- sum(abs(CH)) - n   ## 2020-01-28
-                nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
-                ## detectors per animal
-                dpa <- if (length(dim(CH)) == 2)
-                    mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
-                else
-                    mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-                if (sighting(traps(CH))) {
-                    unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
-                    nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
-                    nzero <- sum(apply(abs(CH),1,sum) == 0)
-                    c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
-                      unmarked=unmarked, nonID = nonID, nzero = nzero)
-                }
-                else {
-                    c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)))
-                }
-            }
-        }
         if (ms(x))
             unlist(lapply(x, counts))
         else {
@@ -140,12 +140,12 @@ defaultextractfn <- function(x, ...) {
         ## fitted model:
         ## default predictions of 'real' parameters
         out <- predict(x)
-        if (is.data.frame(out))
-            out
-        else {
+        if (!is.data.frame(out)) {
             warning ("summarising only first session, group or mixture class")
-            out[[1]]
+            out <- out[[1]]
         }
+        attr(out, 'counts') <- counts(x$capthist)
+        out
     }
     else {
         ## null output: dataframe of 0 rows and 0 columns
@@ -200,7 +200,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             #####################
             ## generate population
             pop <- do.call(sim.popn, poparg)
-
+            
             #####################
             ## CAPTHIST
             ## form dp for sim.capthist or sim.resight
@@ -216,9 +216,10 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
                 dp <- list(g0 = g0[i], sigma = sigma[i],
                            recapfactor = recapfactor[i])
             }
-
-            dp <- replace (dp, names(detarg$detectpar), detarg$detectpar)
-
+            if ('detectpar' %in% names(detarg) && !is.symbol(detarg$detectpar)) {
+                dp <- replace (dp, names(detarg$detectpar), detarg$detectpar)
+            }
+            
             #####################
             ## override det args as required
             detarg$traps      <- grid
@@ -244,7 +245,6 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             else {
                 CHfun <- get(detfunction, envir = sys.frame())
             }
-
             if (detfunction == "sim.resight") {
                 if (!is.null(markocc(grid))) {
                     detarg$noccasions <- length(markocc(grid))
@@ -255,7 +255,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             
             #####################
             ## simulate detection
-
+           
             CHi <- do.call(CHfun, detarg)
             if (joinsessions && ms(CHi)) CHi <- join(CHi)   ## 2024-03-01
             
@@ -263,7 +263,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             
             if (!is.na(nrepeats[i]))
                 attr(CHi, "n.mash") <- rep(NA, nrepeats[i])
-            
+           
             ## 2022-11-24
             ## remember this realisation of D from function
             attr(CHi, 'D') <- attr(detarg$popn, 'D')
@@ -338,7 +338,6 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         ## form par for starting values in secr.fit()
         ## 'par' does not allow for varying link or any non-null model (b, T etc.)
         ## D, lambda0, g0, sigma are columns in 'scenario'
-
         par <- with(scenario, {
             if (!is.null(attr(CH, 'D'))) D <- mean(attr(CH, 'D'))
             wt <- D/sum(D)
@@ -488,6 +487,7 @@ run.scenarios <- function (
     byscenario = FALSE, 
     seed = 123,  
     trap.args = NULL,
+    prefix = NULL,
     ...) {
 
     #--------------------------------------------------------------------------
@@ -515,11 +515,56 @@ run.scenarios <- function (
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         out <- lapply(1:nrepl, onesim, scenario = x)
-        message("Completed scenario ", x$scenario[1])
+        scenarionumber <- x$scenario[1]
+        message("Completed scenario ", scenarionumber)
+        if (!is.null(prefix) && !byscenario) {
+            outputlist <- list(out)
+            names(outputlist) <- as.character(scenarionumber) 
+            saveRDS(makeoutput(outputlist, x), 
+                    file = paste0(prefix, scenarionumber, '.RDS'))
+        }
         out
     }
     ##--------------------------------------------------------------------------
 
+    makeoutput <- function (output, scen) {
+        outputtype <- getoutputtype(output)
+        if (outputtype == 'selectedstatistics')
+            ## collapse replicates within a scenario into a matrix
+            output <- lapply(output, do.call, what = rbind)
+        message("Completed in ", round((proc.time() - ptm)[3]/60,3), " minutes")
+        desc <- packageDescription("secrdesign")  ## for version number
+        value <- list (
+            call      = cl,
+            version   = paste('secrdesign', desc$Version),
+            starttime = starttime,
+            proctime  = (proc.time() - ptm)[3],
+            scenarios = scen,
+            trapset   = trapset,
+            trap.args = trap.args,
+            maskset   = if (is.null(uts)) maskset else NULL,
+            xsigma    = xsigma,
+            nx        = nx,
+            pop.args  = pop.args,
+            CH.function = CH.function,
+            det.args  = det.args,
+            fit       = fit,
+            fit.function = fit.function,
+            fit.args  = fit.args,
+            extractfn = extractfn,
+            seed      = seed,
+            chatnsim  = chatnsim,
+            nrepl     = nrepl,
+            output    = output,
+            outputtype = outputtype
+        )
+        class(value) <- getoutputclass(outputtype)
+        if (outputtype == 'regionN')
+            attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
+        value
+    }
+    ##--------------------------------------------------------------------------
+    
     ## mainline
     ## record start time etc.
     ptm  <- proc.time()
@@ -747,43 +792,10 @@ run.scenarios <- function (
     }
     ##-------------------------------------------
     ## tidy output
-    outputtype <- getoutputtype(output)
-    if (outputtype == 'selectedstatistics')
-        ## collapse replicates within a scenario into a matrix
-        output <- lapply(output, do.call, what = rbind)
-    message("Completed in ", round((proc.time() - ptm)[3]/60,3), " minutes")
-    desc <- packageDescription("secrdesign")  ## for version number
-    value <- list (
-        call      = cl,
-        version   = paste('secrdesign', desc$Version),
-        starttime = starttime,
-        proctime  = (proc.time() - ptm)[3],
-        scenarios = scenarios,
-        trapset   = trapset,
-        trap.args = trap.args,
-        maskset   = if (is.null(uts)) maskset else NULL,
-        xsigma    = xsigma,
-        nx        = nx,
-        pop.args  = pop.args,
-        CH.function = CH.function,
-        det.args  = det.args,
-        fit       = fit,
-        fit.function = fit.function,
-        fit.args  = fit.args,
-        extractfn = extractfn,
-        seed      = seed,
-        chatnsim  = chatnsim,
-        nrepl     = nrepl,
-        output    = output,
-        outputtype = outputtype
-    )
-    class(value) <- getoutputclass(outputtype)
-    if (outputtype == 'regionN')
-        attr(value, 'regionsize') <- sapply(output, function(x) attr(x[[1]], 'regionsize'))
-
-    value
+    
+    makeoutput (output, scenarios) 
+    
 }
-
 
 ########################################################################################
 
@@ -964,9 +976,10 @@ fit.models <- function (
     else {
         output <- lapply(tmpscenarios, runscenario)
     }
-
+    
     ##-------------------------------------------
     ## tidy output
+    
     outputtype <- getoutputtype(output)
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix

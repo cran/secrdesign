@@ -1,3 +1,18 @@
+Changes in version 2.9.1 (2024-04-20)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() default extractfn keeps raw counts (including RPSV) as attribute
+    o  run.scenarios() acquires argument 'prefix' for saving intermediate output
+    o  expand.arg() new utility function to generate lists of arguments
+    o  scenarioSummary() outputs overlap index k
+
+Bugs fixed
+    o  estimateSummary() failed when some estimates NA
+
+Other
+    o  run.scenarios() tweak to allow missing detectpar in det.pars
+    o  estimateArray() and estimateSummary() more robust to failed model fit
+
 Changes in version 2.9.0 (2024-03-01)
 
 New features or changed behaviour of old functions
@@ -17,6 +32,7 @@ Other
     o  byscenario = TRUE uses cluster type = FORK on Unix-like machine
     o  tweaks to c.estimatetables and c.selectedstatistics()
     o  run.scenarios() fitarg start may be NULL (dodges binomial problem with "true") 
+    o  onAttach() options (matprod = "internal")
     
 Changes in version 2.8.2 (2023-03-11)
 

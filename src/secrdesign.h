@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// BOOST used for statistical distributions NOT USED October 2022
+// BOOST used for statistical distributions
 // return NAN for invalid inputs
 // see https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/stat_tut/weg/error_eg.html
 // and https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/pol_tutorial/changing_policy_defaults.html

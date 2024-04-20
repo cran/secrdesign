@@ -63,6 +63,7 @@ A dataframe including the first 8 columns from scenarios and the computed column
 \item{detections}{cost per detection }
 \item{totalcost}{summed costs}
 \item{detperHR}{median number of detectors per 95\% home range}
+\item{k}{overlap index \eqn{k = \sigma \sqrt D / 100} from secr \code{\link{kfn}}}
   
 Costings (the last 6 columns) are omitted if \code{costing = FALSE}. 
 

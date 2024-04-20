@@ -38,7 +38,7 @@ run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
     joinsessions = FALSE, ncores = NULL, byscenario = FALSE, seed = 123, 
-    trap.args, ...)
+    trap.args, prefix = NULL, ...)
 
 fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
@@ -73,6 +73,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   \item{byscenario}{logical; if TRUE then each scenario is sent to a different core}
   \item{seed}{integer pseudorandom number seed}
   \item{trap.args}{list of arguments for trapset components if using function option }
+  \item{prefix}{character to name files saving output of each scenario }
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
   \item{scen}{integer vector of scenario subscripts}
@@ -137,7 +138,7 @@ The default is to use functions \code{\link{sim.capthist}} and \code{\link{secr.
 
 \subsection{Multi-model fit}{
 
-Multiple models may be fited to the same simulated data for multi-model inference. This requires both (i) `fit = "multifit"', and (ii) 'fit.args' should be a nested list (fit arguments within models within fit.index) with a separate specification for each model fit. See the vignette for examples.
+Multiple models may be fitted to the same simulated data for multi-model inference. This requires both (i) `fit = "multifit"', and (ii) 'fit.args' should be a nested list (fit arguments within models within fit.index) with a separate specification for each model fit. See the vignette for examples.
 
 }
 
@@ -171,6 +172,8 @@ In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to se
 \subsection{Mark-resight}{  \code{chatnsim} controls an additional quasi-likelihood model step to adjust for overdispersion of sighting counts. No adjustment happens when \code{chatnsim = 0}; otherwise \code{abs(chatnsim)} gives the number of simulations to perform to estimate overdispersion. If \code{chatnsim < 0} then the quasilikelihood is used only to re-estimate the variance at the previous MLE (method = "none").
 }
 
+\subsection{Intermediate output}{ If 'prefix' is provided than results will be saved for each scenario separately. The filename of scenario 1 is of the form 'prefix1.RDS'. The prefix may include a file path.
+}
 
  \subsection{Further processing}{A summary method is provided (see
   \code{\link{summary.secrdesign}}). It is usually necessary to process
@@ -244,6 +247,9 @@ Murray Efford
 
 
 \seealso{
+
+  \code{\link{expand.arg}},
+  
   \code{\link{select.stats}},
   
   \code{\link{summary.secrdesign}},

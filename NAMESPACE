@@ -66,6 +66,7 @@ export (GApenfn)
 export (compactSample)
 export (Qpm)
 export (En2)
+export (expand.arg)
 
 export (estimateArray)
 export (estimateSummary)

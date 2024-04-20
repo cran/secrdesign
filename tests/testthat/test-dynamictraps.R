@@ -17,5 +17,5 @@ sims <- run.scenarios(nrepl = 10, scenarios = scen, trapset = traplist,
 
 test_that("Random-origin lacework counts as expected", {
     expect_equal(summary(sims)$OUTPUT[[1]]$mean, 
-        c(31.60000, 18.70000, 15.40000, 1.47398, 0.23584), tolerance = 1e-4)
+        c(31.60000, 18.70000, 15.40000, 1.47398, 0.23584, 21.03075), tolerance = 1e-4)
 })
