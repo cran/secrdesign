@@ -35,13 +35,13 @@ GAoptim(mask, alltraps, ntraps, detectpar, noccasions,
   \item{alltraps}{traps object with all possible trap locations}
   \item{ntraps}{number of required trap locations }
   \item{detectpar}{list values of detection parameters lambd0, sigma etc.}
-  \item{detectfn}{integer code or character string for shape of detection function - see \link{detectfn}}
+  \item{detectfn}{integer code or character string for shape of detection function - see \link[secr]{detectfn}}
   \item{noccasions}{integer number of sampling occasions}
   \item{D}{numeric density animals per hectare (0.01 km^2)}
   \item{criterion}{integer code for criterion to maximise, or function (see Details)}
   \item{penalty}{list defining penalty for layout in relation to reference grid (optional)}
   \item{seed}{set a random seed for reproducibility of GA}
-  \item{\dots}{other arguments passed to \code{\link{kofnGA}}}
+  \item{\dots}{other arguments passed to \code{\link[kofnGA]{kofnGA}}}
 
 }
 

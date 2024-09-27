@@ -6,6 +6,7 @@
 ## 2018-11-28 distribution; openCR
 ## 2019-02-15 try-error catch bad uniroot in interpRSE
 ## 2020-01-20 2.6.0 removed openCR
+## 2024-04-28 "bg" added to dotargs in plot method
 ##############################################################################
 
 interpRSE <- function (values) {
@@ -254,7 +255,12 @@ optimalSpacing <- function (
         ## fixed 2017-08-24
         args$x <- out
         if (is.null(args$add)) args$add <- FALSE
-        if (is.null(args$plottype)) args$plottype <- "RSE"
+        if (is.null(args$plottype)) { 
+            if (is.null(out$simRSE)) 
+                args$plottype <- "nrm"
+            else 
+                args$plottype <- "RSE"
+        }
         do.call(plot, args)
         invisible(out)
     }
@@ -264,7 +270,7 @@ optimalSpacing <- function (
 }
 ##############################################################################
 
-plot.optimalSpacing <- function (x, add = FALSE, plottype = c("RSE", "nrm"), ...) {
+plot.optimalSpacing <- function (x, add = FALSE, plottype = c("both", "RSE", "nrm"), ...) {
     ## need to define missing cases
     args <- list(...)
     plottype <- match.arg(plottype)
@@ -273,7 +279,7 @@ plot.optimalSpacing <- function (x, add = FALSE, plottype = c("RSE", "nrm"), ...
     }
     else {
         y <- x$rotRSE$values$RSE
-        if(all(is.na(y))) {
+        if(is.null(x$simRSE) && all(is.na(y))) {
             warning ("RSE all NA")
         }
     }
@@ -299,14 +305,16 @@ plot.optimalSpacing <- function (x, add = FALSE, plottype = c("RSE", "nrm"), ...
         do.call(plot, plotargs)
     }
 
-    if (plottype == "RSE") {
-        defaultargs <- list(col = "black", lwd = 1, cex = 1, pch = 16)
-        dotsargs <- args[names(args) %in% c("col", "lwd", "lty", "cex", "pch")]
+    if (plottype %in% c("both","RSE")) {
+        defaultargs <- list(col = "black", lwd = 1, cex = 1, pch = 21)
+        dotsargs <- args[names(args) %in% c("col", "lwd", "lty", "cex", "pch", "bg")]
         plotargs <- replacedefaults(defaultargs, dotsargs)
 
-        plotargs$x <- R
-        plotargs$y <- y
-        do.call(lines, plotargs)
+        if (plottype == "both") {
+            plotargs$x <- R
+            plotargs$y <- y
+            do.call(lines, plotargs)
+        }
 
         # suspend this 2018-11-30
         # if (!is.null(x$rotRSE$optimum.R)) {
@@ -315,7 +323,6 @@ plot.optimalSpacing <- function (x, add = FALSE, plottype = c("RSE", "nrm"), ...
         #     do.call(points, plotargs)
         # }
         if (!is.null(x$simRSE)) {
-            plotargs$pch <- 1
             plotargs$x <- x$simRSE$summary$R
             plotargs$y <- x$simRSE$summary$RSE.mean
             ## 2017-09-18
@@ -353,3 +360,38 @@ print.optimalSpacing <- function (x, ...) {
     attr(x,"class") <- NULL
     print(x)
 }
+
+##############################################################################
+
+minsimRSE <- function (object, ...) UseMethod("minsimRSE")
+minsimRSE.optimalSpacing <- function (object, cut = 0.2, plt = FALSE, 
+                                   verbose = FALSE, incr = 0.1, ...) {
+    if (is.null(object$simRSE)) stop ("requires optimalSpacing object with simulations")
+    object$simRSE$summary <- object$simRSE$summary[object$simRSE$summary$RSE.mean<10,]
+    sumy <- object$simRSE$summary   
+    ok <- sumy$RSE.mean <= min(sumy$RSE.mean)*(1+cut)
+    sumy <- sumy[ok,]
+    lm1 <- lm(RSE.mean ~ R + I(R^2), data = sumy)
+    cba <- coef(lm1)
+    R <- c(-cba[2]/2/cba[3])  # -b/2a
+    rse <- predict(lm1, newdata=data.frame(R=R))
+    newR <- seq(min(sumy$R), max(sumy$R), incr)
+    newRSE <- predict(lm1, newdata = data.frame(R = newR))
+    if (plt) {
+        object$rotRSE$values$RSE[] <- NA  # suppress ROT values for plot
+        plot(object, ...)
+        lines (newR, newRSE)
+    }
+    if (verbose) {
+        out <- list(
+            model  = lm1, 
+            fitted = data.frame(R = newR, RSE = newRSE),
+            R      = unname(R), 
+            RSE    = unname(rse))
+    }
+    else {
+        out <- c(R = unname(R), RSE = unname(rse))
+    }
+    if (plt) invisible(out) else out
+}
+##############################################################################

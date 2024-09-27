@@ -1,3 +1,19 @@
+Changes in version 2.9.2 (2024-09-27)
+
+New features or changed behaviour of old functions
+    o  minsimRSE new method for optimalSpacing simulations
+
+Bugs fixed
+    o  run.scenarios() with fit="multifit" failed with default (shared) mask
+    o  estimateSummary() lost scenario number in some grouped examples
+    o  run.scenarios() with model2D = 'IHP' could fail with NA start value for D
+
+Other
+    o  internal function dfcast accepts character detectfn
+    o  plot.optimalSpacing tweaked to allow pch other than 1 and new plottype option
+    o  run.scenarios() with trapset functions outputs a message as each is tested
+    o  added anchors to external documentation links
+
 Changes in version 2.9.1 (2024-04-20)
 
 New features or changed behaviour of old functions

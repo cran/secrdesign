@@ -3,7 +3,11 @@
 
 \title{Optimal Detector Spacing}
 
-\description{Estimate the detector spacing that yields the greatest precision for a given detector geometry, number of sampling occasions, density and detection parameters.}
+\description{
+
+Estimate the detector spacing that yields the greatest precision (lowest RSE D-hat) for a given detector geometry, number of sampling occasions, density and detection parameters. By default this uses only the approximate RSE of Efford and Boulanger (2019), but simulations may also be performed and the optimum found later with \code{minsimRSE}.
+
+}
 
 \usage{
 
@@ -19,11 +23,11 @@ optimalSpacing (D, traps, detectpar, noccasions, nrepeats = 1,
 \arguments{
 
   \item{D}{population density animals / hectare (constant)}
-  \item{traps}{ \code{\link{traps}} object }
+  \item{traps}{ \code{\link[secr]{traps}} object }
   \item{detectpar}{named list giving a value for each parameter of detection function (sigma not needed)}
   \item{noccasions}{integer number of sampling occasions}
   \item{nrepeats}{integer number of replicate arrays (not yet used)}
-  \item{detectfn}{integer code or character string for shape of detection function -- see \link{detectfn}}
+  \item{detectfn}{integer code or character string for shape of detection function -- see \link[secr]{detectfn}}
   \item{fittedmodel}{secr fitted model (instead of preceding arguments)}
   \item{xsigma}{numeric buffer width as multiple of sigma}
   \item{R}{numeric vector of relative spacings at which to plot rule-of-thumb RSE(D-hat)}
@@ -45,7 +49,9 @@ A numerical search over possible spacings uses the rule-of-thumb RSE(D-hat) give
 
 The computation emulates variation in detector spacing by inverse variation in sigma (sigma' = sigma / R) with compensating variation in density. Mask buffer width and spacing are also scaled by R.
 
-If \code{fit.function} is not "none" then simulations are also performed for the relative spacings in \code{simulationR}. Density, sigma and mask attributes are scaled as for the rule-of-thumb calculations. Using `method = "none"` gives fast prediction of RSE (from the Hessian evaluated at the known parameter values), but does not estimate bias.
+If \code{fit.function} is "secr.fit" then simulations are also performed for the relative spacings in \code{simulationR}. Density, sigma and mask attributes are scaled as for the rule-of-thumb calculations. Using `method = "none"` gives fast prediction of RSE (from the Hessian evaluated at the known parameter values), but does not estimate bias.
+
+Simulation results are not summarised as a unique `optimal' spacing. For this apply the method \code{\link{minsimRSE}} to the resulting object.
 
 The \dots argument may be used to set the values of these arguments:
 
@@ -83,7 +89,16 @@ Results are returned invisibly if \code{plt = TRUE}.
 \seealso{
 
 \code{\link{minnrRSE}},
-\code{\link{plot.optimalSpacing}}
+\code{\link{minsimRSE}}
+\code{\link{plot.optimalSpacing}},
+
+}
+
+\references{
+
+Efford, M. G., and Boulanger, J. (2019) Fast evaluation of study designs for 
+spatially explicit capture--recapture. 
+\emph{Methods in Ecology and Evolution}, \bold{10}, 1529--1535. DOI: 10.1111/2041-210X.13239
 
 }
 
@@ -109,7 +124,7 @@ optimalSpacing(D = 5, traps = grid, detectpar = list(lambda0 = 0.4, sigma = 20),
 grid <- make.grid(8, 8, spacing = 20, detector = 'proximity')
 optimalSpacing(D = 5, traps = grid, detectfn = "HHN", detectpar = 
     list(lambda0 = 0.2, sigma = 20), noccasions = 5, nrepl = 20, nx = 32, 
-    ncores = 4, plt = TRUE, col = "blue")
+    fit.function = "secr.fit", ncores = 4, plt = TRUE, col = "blue")
 
 ## manual check
 grid <- make.grid(8, 8, spacing = 60, detector = 'proximity')

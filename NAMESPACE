@@ -5,7 +5,7 @@ import (secr)
 
 importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
            "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
-importFrom("stats", "coef", "logLik", "pgamma", "predict", "qnorm", "quantile",
+importFrom("stats", "coef", "logLik", "lm", "pgamma", "predict", "qnorm", "quantile",
            "terms", "uniroot", "optimize", "approx", "dist", "pnorm", "symnum",
            "median", "sd")
 
@@ -72,8 +72,11 @@ export (estimateArray)
 export (estimateSummary)
 export (transformOutput)
 
+export (minsimRSE)
+
 S3method (plot, optimalSpacing)
 S3method (print, optimalSpacing)
+S3method (minsimRSE, optimalSpacing)
 S3method (print, summarysecrdesign)
 S3method (summary, secrdesign)
 S3method (summary, rawdata)

@@ -23,7 +23,7 @@ saturation(traps, mask, detectpar, detectfn =
   \item{mask}{secr mask object}
   \item{detectpar}{ a named list giving a value for each parameter of detection function }
   \item{detectfn}{integer code or character string for shape of detection function 
-      -- see \link{detectfn}}
+      -- see \link[secr]{detectfn}}
   \item{D}{population density animals / hectare; may be scalar or vector of length \code{nrow(mask)}}
   \item{plt}{logical; if TRUE then a colour plot is produced}
   \item{add}{logical; if TRUE any plot is added to the existing plot}

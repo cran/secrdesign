@@ -33,6 +33,7 @@
 ## 2023-05-26 byscenario = TRUE fixed
 ## 2023-05-28 dynamic maskset for trapset function UNTESTED
 ## 2024-03-01 joinsessions argument
+## 2024-05-01 is.function(trapset) messages
 ###############################################################################
 wrapifneeded <- function (args, default) {
     if (any(names(args) %in% names(default)))
@@ -255,7 +256,6 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             
             #####################
             ## simulate detection
-           
             CHi <- do.call(CHfun, detarg)
             if (joinsessions && ms(CHi)) CHi <- join(CHi)   ## 2024-03-01
             
@@ -279,9 +279,10 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
         }
         if (ns > 1) {
             ## assume a 'group' column is present if ns>1
-            names(CH) <- 1:ns
+            names(CH) <- 1:ns  # group?
             if (is.function(multisession)) {
-                CH <- multisession(CH, group)
+                # CH <- multisession(CH, group)   # drop group 2024-05-21
+                CH <- multisession(CH)
             }
             else if (multisession) {
                 CH <- MS.capthist(CH)
@@ -339,7 +340,8 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         ## 'par' does not allow for varying link or any non-null model (b, T etc.)
         ## D, lambda0, g0, sigma are columns in 'scenario'
         par <- with(scenario, {
-            if (!is.null(attr(CH, 'D'))) D <- mean(attr(CH, 'D'))
+            ## 2.9.2 test for numeric to avoid bad start values for D (below)
+            if (!is.null(attr(CH, 'D')) && is.numeric(attr(CH, 'D'))) D <- mean(attr(CH, 'D'))
             wt <- D/sum(D)
             if (detectfn[1] %in% 14:19) {
                 list(D = sum(D) * nrepeats, lambda0 = sum(lambda0*wt), sigma = sum(sigma*wt))
@@ -382,7 +384,6 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
                 fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
             }
         }
-        
         ##-------------------------------------------------------------------
         if (fitfunction == "secr.fit") {
             fit <- try(do.call(secr.fit, fitarg))
@@ -390,7 +391,6 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         else {
             fit <- try(do.call(ipsecr::ipsecr.fit, fitarg))
         }
-
         ##-------------------------------------------------------------------
         ## code for overdispersion adjustment of mark-resight data
         if (!ms(CH) && sighting(traps(CH)) && !inherits(fit, 'try-error')) {
@@ -496,10 +496,11 @@ run.scenarios <- function (
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
         if (is.function(trapset[[1]])) {
             # create each detector layout for this simulation
-            if (length(trapset) != length(trap.args)) {
-                stop ("trapset is list of functions, trap.args should be a list of the same length")
+            # trapset <- mapply (do.call, trapset, trap.args, SIMPLIFY = FALSE)
+            for (i in scenario$trapsindex) {
+                # replace only within scope of this function May 2024
+                trapset[[i]] <- do.call(trapset[[i]], trap.args[[i]])
             }
-            trapset <- mapply (do.call, trapset, trap.args, SIMPLIFY = FALSE)
             ## allow dynamic mask
             if (is.null(maskset)) {
                 warning ('dynamic mask under development')
@@ -507,9 +508,16 @@ run.scenarios <- function (
                                   nx = nx, type = 'trapbuffer')
             }
         }
-        fitarg$mask <- findarg(fitarg, 'mask', 1, maskset[[scenario$maskindex[1]]])
+        msk <- findarg(fitarg, 'mask', 1, maskset[[scenario$maskindex[1]]])
+        if (fit == "multifit") {
+            for (i in 1:length(fitarg))
+                fitarg[[i]]$mask <- findarg(fitarg[[i]], 'mask', 1, maskset[[scenario$maskindex[1]]])
+        }
+        else {
+            fitarg$mask <- msk
+        }
         CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
-                     fitarg$mask, multisession, joinsessions, CH.function)
+                     msk, multisession, joinsessions, CH.function)
         processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
     }
     #--------------------------------------------------------------------------
@@ -573,12 +581,11 @@ run.scenarios <- function (
     # not forcing match.arg for CH.function allows user function
     CH.function <- CH.function[1]
     fit.function <- match.arg(fit.function)
-    
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     ncores <- secr::setNumThreads(ncores)   ## 2022-12-29
     if (byscenario && (ncores > nrow(scenarios)))
         stop ("when allocating by scenario, ncores should not exceed number of scenarios")
-    if (is.function(multisession) || multisession && !anyDuplicated(scenarios$scenario)) {
+    if ((is.function(multisession) || multisession) && !anyDuplicated(scenarios$scenario)) {
         warning ("multisession ignored because no scenario duplicated")
     }
 
@@ -604,16 +611,26 @@ run.scenarios <- function (
     if (is.null(names(trapset)))
         names(trapset) <- paste('traps',1:nk, sep='')
 
-    if (is.function(trapset[[1]])) {
+    if (any(sapply(trapset, is.function))) {
+        if (!all(sapply(trapset, is.function)))
+            stop ("all trapset must be a function if any is a function")
         if (missing(maskset)) 
             stop ("maskset should be provided if trapset is list of functions")
+        if (length(trapset) != length(trap.args)) {
+            stop ("trapset is list of functions, trap.args should be a list of the same length")
+        }
         temptrapset <- list()
         for (i in 1:length(trapset)) {
+            message ("Testing trapset function ", i, "...")
             temptrapset[[i]] <- do.call(trapset[[i]], trap.args[[i]])
         }
         dettype <- sapply(temptrapset, detector)[scenarios$trapsindex]
         sight <- sapply(temptrapset, function(x)
             if(ms(x)) sighting(x[[1]]) else  sighting(x))
+        message ("Testing complete")
+        message ("Detectors ", paste(
+            sapply(temptrapset, function(x) if(ms(x)) nrow(x[[1]]) else nrow(x)),
+            collapse = ', '))
     }
     else {
         dettype <- sapply(trapset, detector)[scenarios$trapsindex]
@@ -755,6 +772,10 @@ run.scenarios <- function (
             avD <- NA
             if (is.character(full.pop.args[[pi]]$D)) {          
                 # avD <- mean (covariates(maskset[[mi]])[,full.pop.args[[pi]]$D])
+                # bug 2024-05-19 does not have core at this point if core not in poparg
+                # 2024-09-27 catch
+                if (is.null(full.pop.args[[pi]]$core) || !inherits(full.pop.args[[pi]]$core, 'mask'))
+                    stop ("pop.args: for model2D = 'IHP' with character 'D' specify a mask as argument 'core'")
                 avD <- mean (covariates(full.pop.args[[pi]]$core)[,full.pop.args[[pi]]$D])
             }
             else if (!is.function(full.pop.args[[pi]]$D)) {
@@ -792,7 +813,6 @@ run.scenarios <- function (
     }
     ##-------------------------------------------
     ## tidy output
-    
     makeoutput (output, scenarios) 
     
 }

@@ -174,16 +174,17 @@ estimateSummary <- function (object, parameter = 'D',
         }
         else {
             # groups from multi-session, etc.
-            if (dim(arr)[3]>1) {
+            # if (dim(arr)[3]>1) {
                 rows <- rep(unique(object$scenarios$scenario), each = dim(arr)[3])
-            }
-            else  {
-                rows <- 1:nrow(out)
-            }
+            # }
+            # else  {
+            #     rows <- 1:nrow(out)
+            # }
             rows <- match(rows, object$scenarios$scenario)
         }
         scen <- object$scenarios[rows,cols, drop = FALSE]
         if (!is.null(cols)) out <- cbind(scen, out)
+        row.names(out) <- 1:nrow(out)
     }
     
     out

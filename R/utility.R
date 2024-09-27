@@ -2,6 +2,7 @@
 ## package 'secrdesign'
 ## utility.R
 ## 2022-10-23, 2022-12-04
+## 2024-04-24 allow character detectfn in dfcast
 ##############################################################################
 
 .local <- new.env()
@@ -14,7 +15,9 @@
 # difference is significant only for large g0 
 dfcast <- function (detectfn = 'HN', detectpar=list(g0 = 0.2, sigma = 25, 
     z = NULL, w = NULL), matchsigma = 1, warning = TRUE) {
-    
+    if (is.character(detectfn)) {
+        detectfn <- secr:::detectionfunctionnumber(detectfn)
+    }
     if (!(detectfn %in% 14:19) ) {
         lambda0 <- -log(1- detectpar$g0)
         cast <- function (sigma2) {

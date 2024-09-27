@@ -14,8 +14,8 @@ the number of sampling occasions, and specified density (D) and detection
 parameters (usually \eqn{g_0} and \eqn{\sigma}).
 
 Detector layouts are provided in a separate list \code{trapset}. This
-may comprise an actual field design input with \code{\link{read.traps}} or
-`traps' objects constructed with \code{\link{make.grid}} etc., as in the
+may comprise an actual field design input with \code{\link[secr]{read.traps}} or
+`traps' objects constructed with \code{\link[secr]{make.grid}} etc., as in the
 Examples. Even a single layout must be presented as a component of a
 list (e.g., \code{list(make.grid())}).
 
@@ -68,7 +68,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
-  \item{joinsessions}{logical; if TRUE function \code{\link{join}} is applied to multisession capthist}
+  \item{joinsessions}{logical; if TRUE function \code{\link[secr]{join}} is applied to multisession capthist}
   \item{ncores}{integer number of cores for parallel processing or NULL}
   \item{byscenario}{logical; if TRUE then each scenario is sent to a different core}
   \item{seed}{integer pseudorandom number seed}
@@ -132,7 +132,7 @@ For \code{ncores > 1} it pays to keep an eye on the processes from the
 
 \subsection{Alternate functions for simulation and fitting}{
 
-The default is to use functions \code{\link{sim.capthist}} and \code{\link{secr.fit}} from \pkg{secr}. Either may be substituted by the corresponding function (\code{\link[ipsecr]{simCH}} or \code{\link[ipsecr]{ipsecr.fit}}) from package \pkg{ipsecr} if that has been installed.
+The default is to use functions \code{\link[secr]{sim.capthist}} and \code{\link[secr]{secr.fit}} from \pkg{secr}. Either may be substituted by the corresponding function (\code{\link[ipsecr]{simCH}} or \code{\link[ipsecr]{ipsecr.fit}}) from package \pkg{ipsecr} if that has been installed.
 
 }
 
@@ -144,7 +144,7 @@ Multiple models may be fitted to the same simulated data for multi-model inferen
 
 \subsection{Design-only statistics}{
 
-Designs for distance sampling were evaluated by Fewster and Buckland (2004) by computing statistics from simulated detections without fitting a model to estimate the detection parameters. An analogous procedure for SECR is implemented by setting \code{fit = 'design'}. A new default extractfn (designextractfn) computes the effective sampling area with the \pkg{secr} function \code{\link{pdot}} and returns a vector of values -
+Designs for distance sampling were evaluated by Fewster and Buckland (2004) by computing statistics from simulated detections without fitting a model to estimate the detection parameters. An analogous procedure for SECR is implemented by setting \code{fit = 'design'}. A new default extractfn (designextractfn) computes the effective sampling area with the \pkg{secr} function \code{\link[secr]{pdot}} and returns a vector of values -
 
 \tabular{lll}{
   n   \tab \tab number of individuals detected \cr
@@ -163,7 +163,7 @@ A similar effect may be achieved by providing a custom extractfn and passing arg
 
 From 2.2.0, two or more rows in \code{scenarios} may share the same scenario number. This is used to generate multiple population subclasses (e.g. sexes) differing in density and/or detection parameters. If \code{multisession = TRUE} the subclasses become separate sessions in a multi-session capthist object (this may require a custom \code{extractfn}). \code{multisession} is ignored with a warning if each scenario row has a unique number.
   
-From 2.7.0, each component of `trapset' may be a function that constructs a detector layout. This allows layouts to be constructed dynamically at the time each capthist is generated; arguments of each function are provided in the `trap.args' list. The primary purpose is to allow systematic grids, laceworks etc. to be constructed with a unique random origin for each replicate. The `maskset' argument must be provided - it should cover all potential layouts, regardless of origins.
+From 2.7.0, each component of `trapset' may be a function that constructs a detector layout. This allows layouts to be constructed dynamically at the time each capthist is generated; arguments of each function are provided in the `trap.args' list which should be of the same length as `trapset' The primary purpose is to allow systematic grids, laceworks etc. to be constructed with a unique random origin for each replicate. The `maskset' argument must be provided - it should cover all potential layouts, regardless of origins.
   
 In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to select a subset of datasets for model fitting.
   

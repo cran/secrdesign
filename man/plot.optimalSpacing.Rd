@@ -12,7 +12,7 @@ Plotsor print results from optimalSpacing.
 
 \usage{
 
-\method{plot}{optimalSpacing}(x, add = FALSE, plottype = c("RSE", "nrm"), ...)
+\method{plot}{optimalSpacing}(x, add = FALSE, plottype = c("both", "RSE", "nrm"), ...)
 \method{print}{optimalSpacing}(x, ...)
 
 }
@@ -26,7 +26,7 @@ Plotsor print results from optimalSpacing.
 
 \details{
 
-If \code{type = "RSE"} then RSE(D-hat) is plotted against R (relative detector spacing), otherwise the expected numbers of individuals, recaptures and movements are plotted against R.
+If \code{plottype = "RSE"} then RSE(D-hat) is plotted against R (relative detector spacing). If \code{plottype = "nrm"} then the expected numbers of individuals, recaptures and movements are plotted against R. 
 
 The \dots argument may be used to pass other plotting arguments to override defaults:
 

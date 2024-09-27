@@ -53,8 +53,8 @@ predict \tab \tab  D, g0, sigma \tab \tab  estimate, SE.estimate, lcl, ucl \cr
 
 \seealso{
 
-\code{\link{predict.secr}},
-\code{\link{coef.secr}},
+\code{\link[secr]{predict.secr}},
+\code{\link[secr]{coef.secr}},
 
 }
 

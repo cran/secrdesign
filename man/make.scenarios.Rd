@@ -38,7 +38,7 @@ crosstraps = TRUE)
     character)}
   
   \item{recapfactor}{numeric vector of values for recapfactor
-    (\code{\link{sim.capthist}})}
+    (\code{\link[secr]{sim.capthist}})}
   
   \item{popindex}{integer vector determining which population model is used}
   

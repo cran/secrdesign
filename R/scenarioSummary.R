@@ -43,6 +43,9 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     ## mainline
     ## record start time etc.
     ## 2019-02-16 not needed ptm  <- proc.time()
+    
+    ## 2024-05-22 Does not work for multiline scenario (i.e. groups) 
+    
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     extrafields <- FALSE
