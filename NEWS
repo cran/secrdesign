@@ -1,3 +1,12 @@
+Changes in version 2.9.3 (2025-03-27)
+
+New features or changed behaviour of old functions
+    o  none
+
+Other
+    o \doi{} in Rd
+    o Link LAPACK and BLAS for RcppArmadillo
+
 Changes in version 2.9.2 (2024-09-27)
 
 New features or changed behaviour of old functions

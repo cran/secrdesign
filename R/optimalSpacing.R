@@ -120,7 +120,7 @@ optimalSpacing <- function (
     detectpar, 
     noccasions,
     nrepeats = 1,
-    detectfn = c('HHN', 'HHR', 'HEX','HAN','HCG', 'HN', 'HR', 'EX'),
+    detectfn = c('HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HN', 'HR', 'EX'),
     fittedmodel = NULL,
     xsigma = 4,
     R = seq(0.2, 4, 0.2),

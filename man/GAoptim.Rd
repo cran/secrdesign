@@ -118,15 +118,15 @@ design for spatial capture--recapture. \emph{Ecology} \bold{102} e03262.
 
 Durbach, I., Borchers, D., Sutherland, C. and Sharma, K. (2021) Fast, flexible 
 alternatives to regular grid designs for spatial capture--recapture. 
-\emph{Methods in Ecology and Evolution} \bold{12}, 298--310. DOI 10.1111/2041-210X.13517
+\emph{Methods in Ecology and Evolution} \bold{12}, 298--310. \doi{10.1111/2041-210X.13517}
 
 Efford, M. G., and Boulanger, J. (2019) Fast evaluation of study designs for 
 spatially explicit capture--recapture. 
-\emph{Methods in Ecology and Evolution}, \bold{10}, 1529--1535. DOI: 10.1111/2041-210X.13239
+\emph{Methods in Ecology and Evolution}, \bold{10}, 1529--1535. \doi{10.1111/2041-210X.13239}
 
 Wolters, M. A. (2015) A genetic algorithm for selection of fixed-size
 subsets with application to design problems. \emph{Journal of Statistical
-Software, Code Snippets}, \bold{68}, 1--18. DOI 10.18637/jss.v068.c01
+Software, Code Snippets}, \bold{68}, 1--18. \doi{10.18637/jss.v068.c01}
 
 }
 

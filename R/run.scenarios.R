@@ -34,6 +34,7 @@
 ## 2023-05-28 dynamic maskset for trapset function UNTESTED
 ## 2024-03-01 joinsessions argument
 ## 2024-05-01 is.function(trapset) messages
+## 2024-09-27 pop.args model2D requires core
 ###############################################################################
 wrapifneeded <- function (args, default) {
     if (any(names(args) %in% names(default)))
@@ -778,7 +779,7 @@ run.scenarios <- function (
                     stop ("pop.args: for model2D = 'IHP' with character 'D' specify a mask as argument 'core'")
                 avD <- mean (covariates(full.pop.args[[pi]]$core)[,full.pop.args[[pi]]$D])
             }
-            else if (!is.function(full.pop.args[[pi]]$D)) {
+            else if (is.numeric(full.pop.args[[pi]]$D)) {
                 avD <- mean(full.pop.args[[pi]]$D)
             }
             scenarios[i, 'nrepeats'] <- 1   ## override

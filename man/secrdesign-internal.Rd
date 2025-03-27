@@ -73,7 +73,9 @@ compactSample -- an object like traps, but with only n rows.
 
 \references{
 
-Durbach, I., Borchers, D., Sutherland, C. and Sharma, K. (2021) Fast, flexible alternatives to regular grid designs for spatial capture--recapture. \emph{Methods in Ecology and Evolution} \bold{12}, 298--310. DOI 10.1111/2041-210X.13517
+Durbach, I., Borchers, D., Sutherland, C. and Sharma, K. (2021) Fast, flexible 
+alternatives to regular grid designs for spatial capture--recapture. 
+\emph{Methods in Ecology and Evolution} \bold{12}, 298--310. \doi{10.1111/2041-210X.13517}
 
 }
 

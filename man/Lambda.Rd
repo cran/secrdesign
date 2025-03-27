@@ -97,7 +97,7 @@ design for spatial capture--recapture. \emph{Ecology} \bold{102} e03262.
 
 Efford, M. G., and Boulanger, J. (2019) Fast evaluation of study designs for 
 spatially explicit capture--recapture. 
-\emph{Methods in Ecology and Evolution}, \bold{10}, 1529--1535. DOI: 10.1111/2041-210X.13239
+\emph{Methods in Ecology and Evolution}, \bold{10}, 1529--1535. \doi{10.1111/2041-210X.13239}
 
 }
 
