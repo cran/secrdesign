@@ -34,7 +34,7 @@ for this shortcut.
 \usage{
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
-    pop.args, CH.function = c("sim.capthist", "simCH"), det.args, 
+    pop.args, CH.function = c("sim.capthist", "simOU.capthist", "simCH"), det.args, 
     fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
     fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
     joinsessions = FALSE, ncores = NULL, byscenario = FALSE, seed = 123, 
@@ -258,7 +258,10 @@ Murray Efford
   
   \code{\link{summary.selectedstatistics}},
   
-  \code{\link{estimateSummary}}
+  \code{\link{estimateSummary}},
+  
+  \code{\link{countSummary}}
+  
   
 
   Miscellaneous --

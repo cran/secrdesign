@@ -1,4 +1,5 @@
 \name{estimateSummary}
+\alias{countSummary}
 \alias{estimateArray}
 \alias{estimateSummary}
 
@@ -11,6 +12,11 @@ An alternative approach to summarising output from \code{run.scenarios}
 especially useful when \code{extractfn = predict} or \code{extractfn = coef},
 and all scenarios have group structure.
 
+\code{countSummary} summarises the raw data when the default extractfn is used 
+with a fitted model (counts are then stored as an attribute of the 'predict' output).
+The same results may be obtained by running the simulations without fitting a 
+model and using \code{summary(..., fields = c('n','mean','se','sd','min','max'))}.
+
 }
 
 \usage{
@@ -21,6 +27,8 @@ estimateSummary(object, parameter = "D", statistics = c("true", "nvalid",
     "EST", "seEST", "RB", "seRB", "RSE", "RMSE", "rRMSE", "COV"), true,
     validrange = c(0, Inf), checkfields = c('estimate','SE.estimate'),
     format = c('data.frame', 'list'), cols = NULL)
+
+countSummary(object, verbose = FALSE, dec = 3)
 
 }
 
@@ -35,6 +43,8 @@ estimateSummary(object, parameter = "D", statistics = c("true", "nvalid",
   will be checked against validrange}
   \item{format}{character choice of output}
   \item{cols}{indices of scenario columns to include when format = "data.frame"}
+  \item{verbose}{logical; if TRUE then the mean, SD, minimum and maximum are tabulated}
+  \item{dec}{integer number of decimal places in output (verbose only)}
   
 }
 
@@ -99,6 +109,19 @@ If groups absent and format = "list" - a list of vectors (one element per scenar
 
 If format = "data.frame" - a data frame with rows corresponding to group x scenario (or session x scenario) combinations and columns corresponding to statistics as above.
 
+\code{countSummary} --
+
+A matrix (verbose = FALSE) or list of matrices, one per scenario (verbse = TRUE).
+
+Columns are defined as 
+
+\item{n}{number of individuals detected}
+\item{r}{number of recaptures (total detections - n)}
+\item{nmov}{number of movements}
+\item{dpa}{detectors per animal}
+\item{rse}{approximate RSE(\eqn{\hat D}) from 1 / sqrt(min(n,r))}
+\item{rpsv}{spatial variance computed with \code{\link[secr]{RPSV}}, CC = TRUE}
+
 }
 
 \note{
@@ -117,7 +140,8 @@ It is assumed that all scenarios (and all models in a multi-model fit) report th
 
 \code{\link{run.scenarios}},
 \code{\link{header}},
-\code{\link{summary.estimatetables}}
+\code{\link{summary.estimatetables}},
+\code{\link{summary.selectedstatistics}}
 
 }
 

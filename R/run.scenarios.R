@@ -35,6 +35,9 @@
 ## 2024-03-01 joinsessions argument
 ## 2024-05-01 is.function(trapset) messages
 ## 2024-09-27 pop.args model2D requires core
+## 2025-06-07 add simOU.capthist option to args
+## 2025-06-09 generalised detection parameters for OU
+
 ###############################################################################
 wrapifneeded <- function (args, default) {
     if (any(names(args) %in% names(default)))
@@ -159,14 +162,14 @@ defaultextractfn <- function(x, ...) {
 makeCH <- function (scenario, trapset, full.pop.args, full.det.args, 
     mask, multisession, joinsessions, detfunction) {
     ns <- nrow(scenario)
-    with( scenario, {
+    # with( scenario, {
         CH <- vector(mode = 'list', ns)
         for (i in 1:ns) {
             #####################
             ## retrieve data
-            grid   <- trapset[[trapsindex[i]]]
-            poparg <- full.pop.args[[popindex[i]]]
-            detarg <- full.det.args[[detindex[i]]]
+            grid   <- trapset[[scenario$trapsindex[i]]]
+            poparg <- full.pop.args[[scenario$popindex[i]]]
+            detarg <- full.det.args[[scenario$detindex[i]]]
 
             #####################
             ## POPULATION
@@ -183,19 +186,19 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
                 ## for 'linear' case we may want a constant numeric value
                 if (!is.character(poparg$D) && !is.function(poparg$D) && 
                         (length(poparg$D)<nrow(mask))) {
-                    poparg$D <- D[i]
+                    poparg$D <- scenario$D[i]
                 }
                 if (is.function(poparg$D) && packageVersion('secr') < '4.5.8') {
                     stop("density function requires secr version >= 4.5.8")
                 }
-                if (nrepeats[i]!=1)
+                if (scenario$nrepeats[i]!=1)
                     stop("nrepeats > 1 not allowed for IHP, linear")
             }
             else {
                 # if (!inherits(poparg$core, 'mask')) {    # conditional 2023-11-07
                     poparg$core <- attr(mask, "boundingbox")
                 # }
-                poparg$D <- D[i]*nrepeats[i]  ## optionally simulate inflated density
+                poparg$D <- scenario$D[i] * scenario$nrepeats[i]  ## optionally simulate inflated density
             }
             poparg$buffer <- 0
 
@@ -208,16 +211,8 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             ## form dp for sim.capthist or sim.resight
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
-            
-
-            if (detectfn[i] %in% 14:19) {
-                dp <- list(lambda0 = lambda0[i], sigma = sigma[i],
-                           recapfactor = recapfactor[i])
-            }
-            else {
-                dp <- list(g0 = g0[i], sigma = sigma[i],
-                           recapfactor = recapfactor[i])
-            }
+            pnames <-  parnames(scenario$detectfn[i])
+            dp <- c(as.list(scenario[i,pnames]), recapfactor = scenario$recapfactor[i])
             if ('detectpar' %in% names(detarg) && !is.symbol(detarg$detectpar)) {
                 dp <- replace (dp, names(detarg$detectpar), detarg$detectpar)
             }
@@ -226,8 +221,8 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             ## override det args as required
             detarg$traps      <- grid
             detarg$popn       <- pop
-            detarg$detectfn   <- detectfn[i]
-            detarg$noccasions <- noccasions[i]
+            detarg$detectfn   <- scenario$detectfn[i]
+            detarg$noccasions <- scenario$noccasions[i]
             if ("detectpar" %in% names(detarg))
                 detarg$detectpar  <- dp
             else
@@ -250,7 +245,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             if (detfunction == "sim.resight") {
                 if (!is.null(markocc(grid))) {
                     detarg$noccasions <- length(markocc(grid))
-                    if (detarg$noccasions != noccasions[i])
+                    if (detarg$noccasions != scenario$noccasions[i])
                         warning("length of markocc attribute overrides noccasions in scenario")
                 }
             }
@@ -262,8 +257,8 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             
             #####################
             
-            if (!is.na(nrepeats[i]))
-                attr(CHi, "n.mash") <- rep(NA, nrepeats[i])
+            if (!is.na(scenario$nrepeats[i]))
+                attr(CHi, "n.mash") <- rep(NA, scenario$nrepeats[i])
            
             ## 2022-11-24
             ## remember this realisation of D from function
@@ -287,7 +282,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             }
             else if (multisession) {
                 CH <- MS.capthist(CH)
-                if (!is.null(group)) session(CH) <- group
+                if (!is.null(scenario$group)) session(CH) <- scenario$group
                 CH
             }
             else {
@@ -297,14 +292,14 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
                 class(CH) <- c("capthist", "list")   
                 CH <- do.call(rbind, CH)
                 ####################################
-                covariates(CH)$group <- rep(group, nc)
+                covariates(CH)$group <- rep(scenario$group, nc)
                 CH
             }
         }
         else {
             CH[[1]]
         }
-    })
+    # })
 }
 #####################
 processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscenario, ...) {
@@ -346,6 +341,10 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
             wt <- D/sum(D)
             if (detectfn[1] %in% 14:19) {
                 list(D = sum(D) * nrepeats, lambda0 = sum(lambda0*wt), sigma = sum(sigma*wt))
+            }
+            else if (detectfn[1] %in% 20) {
+                # ad hoc 2025-06-09
+                list(D = sum(D) * nrepeats, epsilon = sum(epsilon*wt), sigma = sum(sigma*wt), tau = sum(tau*wt))
             }
             else {
                 list(D = sum(D) * nrepeats, g0 = sum(g0*wt), sigma = sum(sigma*wt))
@@ -475,7 +474,7 @@ run.scenarios <- function (
     xsigma = 4,
     nx = 32, 
     pop.args, 
-    CH.function = c("sim.capthist", "simCH"),
+    CH.function = c("sim.capthist", "simOU.capthist", "simCH"),
     det.args, 
     fit = FALSE, 
     fit.function = c("secr.fit", "ipsecr.fit"),
@@ -535,7 +534,6 @@ run.scenarios <- function (
         out
     }
     ##--------------------------------------------------------------------------
-
     makeoutput <- function (output, scen) {
         outputtype <- getoutputtype(output)
         if (outputtype == 'selectedstatistics')
@@ -582,7 +580,14 @@ run.scenarios <- function (
     # not forcing match.arg for CH.function allows user function
     CH.function <- CH.function[1]
     fit.function <- match.arg(fit.function)
-    starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
+    if (any(scenarios$detectfn == 20) && CH.function != "simOU.capthist") {
+        CH.function <- "simOU.capthist"
+        warning ("Using CH.function 'simOU.capthist' for Ornstein-Uhlenbeck detectfn 20")
+    }
+    if (CH.function == "simOU.capthist" && !any(scenarios$detectfn == 20)) {
+        stop ("CH.function 'simOU.capthist' requires scenarios$detectfn 20")
+    }
+        starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
     ncores <- secr::setNumThreads(ncores)   ## 2022-12-29
     if (byscenario && (ncores > nrow(scenarios)))
         stop ("when allocating by scenario, ncores should not exceed number of scenarios")

@@ -117,3 +117,80 @@ expand.arg <- function (..., sublist = list()) {
     out
 }
 ##############################################################################
+
+## Temporarily from secr utility
+
+valid.detectfn <- function (detectfn, valid = c(0:20)) {
+    # exclude 4 uniform: too numerically flakey
+    if (is.null(detectfn))
+        stop ("requires 'detectfn'")
+    if (is.character(detectfn))
+        detectfn <- detectionfunctionnumber(detectfn)
+    if (any(!(detectfn %in% valid)))    # allow vector of detectfn 2024-02-12
+        stop ("invalid detection function")
+    detectfn
+}
+
+.local$detectionfunctions <-
+    c('halfnormal',
+      'hazard rate',
+      'exponential',
+      'compound halfnormal',
+      'uniform',
+      'w exponential',
+      'annular normal',
+      'cumulative lognormal',
+      'cumulative gamma',
+      'binary signal strength',
+      'signal strength',
+      'signal strength spherical',
+      'signal-noise',
+      'signal-noise spherical',
+      'hazard halfnormal',
+      'hazard hazard rate',
+      'hazard exponential',
+      'hazard annular normal',
+      'hazard cumulative gamma',
+      'hazard variable power',
+      'Ornstein-Uhlenbeck')
+
+.local$DFN <- c('HN', 'HR', 'EX', 'CHN', 'UN', 'WEX', 'ANN', 'CLN', 'CG',
+                     'BSS', 'SS', 'SSS', 'SN', 'SNS',
+                     'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'OU')
+
+detectionfunctionnumber <- function (detname) {
+    dfn <- match (toupper(detname), .local$DFN)
+    if (is.na(dfn))
+        dfn <- match (tolower(detname), .local$detectionfunctions)
+    if (is.na(dfn))
+        stop ("unrecognised detection function ", detname)
+    dfn-1
+}
+
+#-------------------------------------------------------------------------------
+
+parnames <- function (detectfn) {
+    switch (detectfn+1,
+            c('g0','sigma'),   ## 0
+            c('g0','sigma','z'),
+            c('g0','sigma'),
+            c('g0','sigma','z'),
+            c('g0','sigma'),
+            c('g0','sigma','w'),
+            c('g0','sigma','w'),
+            c('g0','sigma','z'),
+            c('g0','sigma','z'),
+            c('b0','b1'),
+            c('beta0','beta1', 'sdS'),    ## include cutval?
+            c('beta0','beta1', 'sdS'),    ## include cutval?
+            c('beta0','beta1', 'sdS','muN','sdN'),
+            c('beta0','beta1', 'sdS','muN','sdN'),
+            c('lambda0','sigma'),
+            c('lambda0','sigma','z'),
+            c('lambda0','sigma'),
+            c('lambda0','sigma','w'),
+            c('lambda0','sigma','z'),
+            c('lambda0','sigma','z'),
+            c('epsilon','sigma','tau')    ## 20
+    )
+}

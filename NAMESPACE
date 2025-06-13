@@ -7,7 +7,7 @@ importFrom("graphics", "abline", "hist", "lines", "mtext", "par",
            "plot", "points", "segments", "legend", "axis", "box", "polygon", "text")
 importFrom("stats", "coef", "logLik", "lm", "pgamma", "predict", "qnorm", "quantile",
            "terms", "uniroot", "optimize", "approx", "dist", "pnorm", "symnum",
-           "median", "sd")
+           "median", "sd", "rnorm", "runif")
 
 importFrom("utils", 
     "flush.console", 
@@ -68,11 +68,14 @@ export (Qpm)
 export (En2)
 export (expand.arg)
 
+export (countSummary)
 export (estimateArray)
 export (estimateSummary)
 export (transformOutput)
 
 export (minsimRSE)
+export (simOU)
+export (simOU.capthist)
 
 S3method (plot, optimalSpacing)
 S3method (print, optimalSpacing)

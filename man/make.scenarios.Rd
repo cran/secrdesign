@@ -12,9 +12,10 @@
 
 \usage{
 
-make.scenarios(trapsindex = 1, noccasions = 3,  nrepeats = 1, D, g0, sigma, lambda0,
-detectfn = 0, recapfactor = 1, popindex = 1, detindex = 1, fitindex = 1, groups,
-crosstraps = TRUE)
+make.scenarios(trapsindex = 1, noccasions = 3,  nrepeats = 1, 
+  D, g0, sigma, lambda0, epsilon, tau, z,
+  detectfn = 0, recapfactor = 1, popindex = 1, detindex = 1, fitindex = 1, 
+  groups, crosstraps = TRUE)
 
 }
 
@@ -33,6 +34,9 @@ crosstraps = TRUE)
   \item{sigma}{numeric vector of values for the sigma parameter (m)}
   
   \item{lambda0}{numeric vector of values for the lambda0 parameter}
+  \item{epsilon}{numeric vector of values for the epsilon parameter (m)}
+  \item{tau}{numeric vector of values for the tau parameter (OU correlation)}
+  \item{z}{numeric vector of values for the z parameter}
   
   \item{detectfn}{vector of valid detection function codes (numeric or
     character)}
@@ -66,9 +70,13 @@ crosstraps = TRUE)
   \code{trapsindex}, \code{noccasions}, and \code{nrepeats} are merely
   used to fill in these columns in the output dataframe.
 
-  The argument \code{lambda0} replaces \code{g0} for the hazard detection
-  functions 14--18 (\code{\link[secr]{detectfn}}). 
+  Use the detection parameters (g0, sigma, lambda0, epsilon, tau, z) that apply 
+  for the chosen detection function (\code{\link[secr]{detectfn}}). Others will be ignored.
   
+  Detectfn 20 (Ornstein-Uhlenbeck) is currently available in \pkg{secrdesign} 
+  but not in \pkg{secr} (see \code{\link{simOU.capthist}}). 
+  It uses epsilon, sigma and tau (= 1/beta).
+
   Designs may use multiple detector arrays with the same internal
   geometry (e.g., number and spacing of traps). The number of such
   arrays is varied with the \code{nrepeats} argument. For example, you
@@ -93,8 +101,9 @@ crosstraps = TRUE)
   \item{noccasions}{}
   \item{nrepeats}{}
   \item{D}{}
-  \item{g0}{or lambda0}
-  \item{sigma}{}
+  \item{...}{}
+  \item{[parameters appropriate to detectfn]}{}
+  \item{...}{}
   \item{detectfn}{see \code{\link[secr]{detectfn}}; always numeric}
   \item{recapfactor}{}
   \item{popindex}{}

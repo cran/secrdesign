@@ -11,7 +11,9 @@
 
 ## construct a dataframe in which each row represents a scenario
 make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
-                            D, g0, sigma, lambda0, detectfn = 0, recapfactor = 1,
+                            D, 
+                            g0, sigma, lambda0, epsilon, tau, z,
+                            detectfn = 0, recapfactor = 1,
                             popindex = 1, detindex = 1, fitindex = 1, groups,
                             crosstraps = TRUE) {
     inputs <-  as.list (environment())
@@ -21,26 +23,22 @@ make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
         inputs$D <- NA
     }
     trapping   <- inputs[c('trapsindex', 'noccasions', 'nrepeats')]
-    parameters <- inputs[c('D', 'g0', 'sigma', 'detectfn', 'recapfactor',
+    
+    ## allow uniform detectfn = 4 and detectfn = 20 for simulation
+    inputs$detectfn <- valid.detectfn(inputs$detectfn, valid = c(0:20))
+    pnames <- parnames(inputs$detectfn)
+    OK <- sapply(inputs[pnames], is.numeric)
+    if (any (!OK)) stop ("parameters missing from input: ", pnames[!OK])
+    
+    parameters <- inputs[c('D', pnames, 'detectfn', 'recapfactor',
                            'popindex', 'detindex', 'fitindex')]
-    ## allow uniform detectfn = 4 for simulation
-    parameters$detectfn <- secr:::valid.detectfn(parameters$detectfn, valid = c(0:19))
+    
     if (!crosstraps) {
         trapmat <- matrix(nrow = max(sapply(trapping, length)), ncol = 3)
         for (i in 1:3) trapmat[,i] <- trapping[[i]]
         trapdf <- data.frame(trapmat)
         names(trapdf) <- c('trapsindex', 'noccasions', 'nrepeats')
         trapping <- list(trapping = 1:nrow(trapmat))
-    }
-    if (missing(lambda0)) {
-        inputs$lambda0 <- NULL
-    }
-    else {
-        if (!missing(g0))
-            stop ("specify g0 or lambda0, not both")
-        inputs$g0 <- NULL
-        parameters[['g0']] <- lambda0
-        names(parameters)[names(parameters)=='g0'] <- 'lambda0'
     }
     if (!all(sapply(parameters[-1], is.numeric)))
         ## stop ("must provide all detection parameters")
