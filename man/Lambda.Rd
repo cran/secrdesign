@@ -55,7 +55,12 @@ For hazard function \eqn{\lambda(d)} and \eqn{S} occasions, we define \eqn{\Lamb
 
 Formulae for expected counts are given in \href{https://www.otago.ac.nz/density/pdfs/secrdesign-Enrm.pdf}{secrdesign-Enrm.pdf}.
 
-\code{minnrRSE} has mostly the same inputs as \code{Enrm} but returns sqrt(CF/min(n,r)). The correction factor CF may be used to adjust for systematic bias (e.g., for a line of detectors CF = 1.4 may be appropriate). The default \code{distribution = 'poisson'} is for Poisson-distributed \eqn{N} and \eqn{n}. To adjust the prediction for fixed \eqn{N} (binomial \eqn{n}) use \code{distribution = 'binomial'} (see \url{../doc/secrdesign-tools.pdf} Appendix 2).
+\code{minnrRSE} has mostly the same inputs as \code{Enrm} but returns sqrt(CF/min(n,r)). 
+The correction factor CF may be used to adjust for systematic bias (e.g., for a line of
+detectors CF = 1.4 may be appropriate). The default \code{distribution = 'poisson'} is 
+for Poisson-distributed \eqn{N} and \eqn{n}. To adjust the prediction for fixed 
+\eqn{N} (binomial \eqn{n}) use \code{distribution = 'binomial'} 
+(see \href{https://www.otago.ac.nz/density/pdfs/secrdesign-tools.pdf}{secrdesign-tools.pdf} Appendix 2).
 
 From 2.7.0, the first argument of \code{minnrRSE} may also be the output from \code{\link{GAoptim}}.
 
@@ -74,7 +79,7 @@ given constant density `D', detectors `trp', mask `msk' and detection parameters
 \value{
 
 \code{Lambda} --
-    \link[secr]{mask} object with covariates `Lambda' (\eqn{\Lambda(x)}{\Lambda(x)}), `sumpk' and `sumq2' (intermediate values for computation of expected counts - see \url{../doc/expectedcounts.pdf})
+    \link[secr]{mask} object with covariates `Lambda' (\eqn{\Lambda(x)}{\Lambda(x)}), `sumpk' and `sumq2' (intermediate values for computation of expected counts)
 %\code{Lambdak} --
 %    Vector of with single-occasion hazard at each detector integrated over \link{mask} object.
 

@@ -8,11 +8,16 @@
 Simulation output may contain rogue values due to idiosyncracies of
 model fitting. For example, nonidentifiability due to inadequate data
 can result in spurious extreme `estimates' of the sampling
-variance. Undue influence of rogue replicates can be reduced by using
-the median as a summary field rather than the mean. This function is
-another way to deal with the problem, by setting to NA selected
+variance, and the corresponding parameter estimates are unreliable. 
+Undue influence of rogue replicates can be reduced by using
+the median as a summary field rather than the mean. 
+
+This function is another way to deal with the problem. Selected
 statistics from replicates for which some `test' statistic is
-out-of-range.
+out-of-range are set to NA.
+
+Alternatively, out-of-range values may be excluded using the `validrange' 
+argument of the summary function \code{\link{estimateSummary}}. This is often simpler.
 
 }
 
@@ -62,7 +67,9 @@ fails.
 
 \seealso{
   
-  \code{\link{select.stats}}, \code{\link{find.stats}}
+  \code{\link{select.stats}},    
+  \code{\link{find.stats}},  
+  \code{\link{estimateSummary}}
   
 }
 

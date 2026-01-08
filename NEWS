@@ -1,3 +1,24 @@
+Changes in version 2.10.1 (2026-01-09)
+
+New features or changed behaviour of old functions
+    o  tentative option for openCR.fit (multi-session)
+    o  run.scenarios() default extractfn saves start, method and maximization 
+       code from nlm(), optim() or ipsecr.fit() as attributes of output for each replicate 
+    o  plot.optimalSpacing() acquires argument 'xtype' to control the scale of the x-axis, and xoffset
+    o  plot.optimalSpacing() plots RB, RMSE
+    o  optimalSpacing() applies validate() when argument 'validrange' provided
+    o  minsimRSE() ignores missing values
+
+Bugs fixed
+    o  fit = "multifit" failed when model specified for more than one parameter
+    
+Other
+    o  simOU() and simOU.capthist() moved to secr
+    o  simOU.capthist() speed up and verify argument
+    o  secr::: calls updated for functions renamed in secr 5.3.0
+    o  requires secr >= 5.3.0
+    o  fix URLs in help files
+
 Changes in version 2.10.0 (2025-06-13)
 
 New features or changed behaviour of old functions

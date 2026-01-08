@@ -12,11 +12,11 @@ Qpm <- function (D, traps, mask, detectpar, noccasions, detectfn =
         stop ("Qpm is for detector types proximity and count only")
     if (is.character(detectfn))
         detectfn <- match.arg(detectfn)
-    detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:19))
+    detectfn <- secr:::secr_valid.detectfn(detectfn, valid = c(0,1,2,14:19))
     dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 2 to 16
     detectfn <- dfc$detectfn
     detectpar <- dfc$detectpar
-    detectpars <- unlist(detectpar[secr:::parnames(detectfn)])
+    detectpars <- unlist(detectpar[secr:::secr_parnames(detectfn)])
     D <- rep(D, length.out = nrow(mask)) * attr(mask, 'area')  # per cell
     temp <- Qpmcpp (
         as.double(unlist(detectpars)), 

@@ -35,12 +35,12 @@ for this shortcut.
 
 run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     pop.args, CH.function = c("sim.capthist", "simOU.capthist", "simCH"), det.args, 
-    fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
-    fit.args, chatnsim, extractfn = NULL, multisession = FALSE,
+    fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"), 
+    fit.args, chatnsim = 0, extractfn = NULL, multisession = FALSE,
     joinsessions = FALSE, ncores = NULL, byscenario = FALSE, seed = 123, 
     trap.args, prefix = NULL, ...)
 
-fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"), 
+fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"), 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
     scen, repl, ...)
 
@@ -64,7 +64,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   data are generated but no model is fitted \cr 
   (see also Multi-model fit and Design-only statistics in Details)}
   \item{fit.function}{character name of function to use for model fitting}
-  \item{fit.args}{list of named arguments to \code{\link[secr]{secr.fit}} or \code{\link[ipsecr]{ipsecr.fit}} (optional)}
+  \item{fit.args}{list of named arguments to fit.function (optional)}
   \item{chatnsim}{integer number of simulations for overdispersion of mark-resight models}
   \item{extractfn}{function to extract a vector of statistics from secr model}
   \item{multisession}{logical; if TRUE groups are treated as additional sessions}
@@ -116,7 +116,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit"),
   If \code{byscenario = TRUE} then by default each scenario will be run in a separate worker
 process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Parallel}). The number of scenarios should not exceed the available number of cores (set by the 'ncores' argument or a prior call to `setNumThreads`).
 
-If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be preset with `setNumThreads`. If \code{ncores} is provided then the environment variable RCPP_PARALLEL_NUM_THREADS is reset. The default behaviour of the fitting functions (secr.fit, ipsecr.fit) is to use this value (unless specified in fit.args).
+If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be preset with `setNumThreads`. If \code{ncores} is provided then the environment variable RCPP_PARALLEL_NUM_THREADS is reset. The default behaviour of the fitting functions (secr.fit, ipsecr.fit, openCR.fit) is to use this value (unless specified in fit.args).
 
   When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link{clusterSetRNGStream}}).

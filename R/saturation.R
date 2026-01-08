@@ -11,7 +11,7 @@ saturation <- function (traps, mask, detectpar, detectfn =
         stop ("only for 'multi','proximity', 'capped' or 'count' detectors")
     if (is.character(detectfn))
         detectfn <- match.arg(detectfn)
-    detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:19))
+    detectfn <- secr:::secr_valid.detectfn(detectfn, valid = c(0,1,2,14:19))
     dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 1 to 15, 2 to 16
     detectfn <- dfc$detectfn
     detectpar <- dfc$detectpar

@@ -74,7 +74,7 @@ make.scenarios(trapsindex = 1, noccasions = 3,  nrepeats = 1,
   for the chosen detection function (\code{\link[secr]{detectfn}}). Others will be ignored.
   
   Detectfn 20 (Ornstein-Uhlenbeck) is currently available in \pkg{secrdesign} 
-  but not in \pkg{secr} (see \code{\link{simOU.capthist}}). 
+  but not in \pkg{secr} (see \code{\link[secr]{simOU.capthist}}). 
   It uses epsilon, sigma and tau (= 1/beta).
 
   Designs may use multiple detector arrays with the same internal

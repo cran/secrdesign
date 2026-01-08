@@ -1,5 +1,7 @@
 library(secrdesign)
 
+# simOU.capthist is now in secr, but still tested here to save time
+
 # simulate some capture data
 set.seed(124)
 grid <- make.grid(8, 8, spacing = 2, detector = 'count')

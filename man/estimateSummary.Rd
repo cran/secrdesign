@@ -71,8 +71,9 @@ should have length equal to the number of parameter tables in each replicate,
 i.e. (number of scenarios) * (number of groups), ordered by scenario. 
 Otherwise, true values will be taken from rows of the data frame object$scenarios.
 
-Replicates are rejected (set to NA) if any \code{checkfields} 
-falls outside \code{validrange}.
+Replicates are rejected (parameter set to NA and 'nvalid' reduced by 1) 
+if any of the \code{checkfields} falls outside \code{validrange} or is missing 
+(NA). 
 
 Output statistics `EST', `RB', and `RSE' are means 
 across replicates, and `seEST', `seRB' the corresponding standard errors.
@@ -138,10 +139,11 @@ It is assumed that all scenarios (and all models in a multi-model fit) report th
 
 \seealso{
 
-\code{\link{run.scenarios}},
-\code{\link{header}},
-\code{\link{summary.estimatetables}},
-\code{\link{summary.selectedstatistics}}
+\code{\link{run.scenarios}},  
+\code{\link{header}},  
+\code{\link{summary.estimatetables}},  
+\code{\link{summary.selectedstatistics}},  
+\code{\link{validate}}
 
 }
 

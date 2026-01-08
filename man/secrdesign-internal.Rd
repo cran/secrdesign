@@ -40,7 +40,7 @@ GApenfn(traps, sigma)
   \code{GApenfn} is the default pen_fn used by \code{\link{GAoptim}} When called with a non-null penalty argument.
   
   Values of outputtype map to class of the run.scenarios output as follows
-  \tabular{lll}{
+  \tabular{ll}{
   Output type \tab Class \cr
   secrfit \tab c("fittedmodels", "secrdesign", "list") \cr
   ipsecrfit \tab c("fittedmodels", "secrdesign", "list") \cr

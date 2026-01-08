@@ -12,13 +12,13 @@ Lambda <- function (traps, mask, detectpar, noccasions, detectfn =
         stop ("Lambda does not accept multi-session traps or mask")
     if (is.character(detectfn))
         detectfn <- match.arg(detectfn)
-    detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:19))
+    detectfn <- secr:::secr_valid.detectfn(detectfn, valid = c(0,1,2,14:19))
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
     dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 2 to 16
     detectfn <- dfc$detectfn
     detectpar <- dfc$detectpar
-    detectpars <- unlist(detectpar[secr:::parnames(detectfn)])
-    dettype <- secr:::detectorcode(traps, noccasions = noccasions)[1]
+    detectpars <- unlist(detectpar[secr:::secr_parnames(detectfn)])
+    dettype <- secr:::secr_detectorcode(traps, noccasions = noccasions)[1]
     d <- edist(traps, mask)
     temp <- Lambdacpp (
         as.integer(dettype),
@@ -88,12 +88,12 @@ minnrRSE <- function (D, ..., CF = 1.0, distribution = c('poisson', 'binomial'))
 #         stop ("Lambdak does not accept multi-session traps or mask")
 #     if (is.character(detectfn))
 #         detectfn <- match.arg(detectfn)
-#     detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:18))
+#     detectfn <- secr:::secr_valid.detectfn(detectfn, valid = c(0,1,2,14:18))
 #     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
 #     dfc <- dfcast (detectfn, detectpar)  # transforms detectfn 0 to 14, 2 to 16
 #     detectfn <- dfc$detectfn
 #     detectpar <- dfc$detectpar
-#     detectpars <- unlist(detectpar[secr:::parnames(detectfn)])
+#     detectpars <- unlist(detectpar[secr:::secr_parnames(detectfn)])
 #     if (any(detector(traps) != 'capped')) warning ("Lambdak is intended only for capped detectors")
 #     dettype <- 8
 #     temp <- .C("LambdaK", 
@@ -112,8 +112,8 @@ minnrRSE <- function (D, ..., CF = 1.0, distribution = c('poisson', 'binomial'))
 # }
 
 # Encap <- function (D, traps, mask, detectpar, noccasions, detectfn, LK) {
-#     detectfn <- secr:::valid.detectfn(detectfn, valid = c(0,1,2,14:18))
-#     detectpars <- unlist(detectpar[secr:::parnames(detectfn)])
+#     detectfn <- secr:::secr_valid.detectfn(detectfn, valid = c(0,1,2,14:18))
+#     detectpars <- unlist(detectpar[secr:::secr_parnames(detectfn)])
 #     if (any(detector(traps) != 'capped')) warning ("Lambdak is intended only for capped detectors")
 #     dettype <- 8
 # 

@@ -37,7 +37,9 @@
 ## 2024-09-27 pop.args model2D requires core
 ## 2025-06-07 add simOU.capthist option to args
 ## 2025-06-09 generalised detection parameters for OU
-
+## 2025-08-14 allow fit.function = "openCR.fit" (tentative)
+## 2025-08-22 get.default.fit.args() common code
+## 2025-12-27 etc. completion codes, start, method saved by defaultextractfn
 ###############################################################################
 wrapifneeded <- function (args, default) {
     if (any(names(args) %in% names(default)))
@@ -45,6 +47,39 @@ wrapifneeded <- function (args, default) {
     else
         args
 }
+###############################################################################
+
+get.default.fit.args <- function (fit.function) {
+    if (fit.function == 'secr.fit') {
+        default.args           <- as.list(formals(secr.fit))
+        default.args[["..."]]  <- NULL
+        default.args$biasLimit <- NA       ## never check
+        default.args$verify    <- FALSE    ## never check
+        default.args$start     <- "true"   ## known values
+        default.args$detectfn  <- 0        ## halfnormal
+        default.args$details   <- list(nsim = 0)
+        default.args$trace     <- FALSE
+    }
+    else if (fit.function == 'ipsecr.fit') {
+        if (!requireNamespace("ipsecr")) stop ("requires package ipsecr; please install")
+        default.args           <- as.list(formals(ipsecr::ipsecr.fit))
+        default.args[["..."]]  <- NULL
+        default.args$proxyfn   <- ipsecr::proxy.ms
+        default.args$verify    <- FALSE   ## never check
+        default.args$start     <- "true"  ## known values
+        default.args$verbose   <- FALSE
+        
+    }
+    else if (fit.function == 'openCR.fit') {
+        if (!requireNamespace("openCR")) stop ("requires package openCR; please install")
+        default.args           <- as.list(formals(openCR::openCR.fit))
+        default.args[["..."]]  <- NULL
+        default.args$detectfn  <- 0        ## halfnormal
+    }
+    else stop ("unrecognised fit function")
+    default.args
+}
+
 ###############################################################################
 ## complete a partial argument list (arg) with default args
 ## always return a list of arg lists long enough to match max(index)
@@ -90,38 +125,40 @@ designextractfn <- function(CH, ...) {
 }
 ###############################################################################
 
-defaultextractfn <- function(x, ...) {
-    counts <- function(CH) {
-        ## for single-session CH
-        if (nrow(CH)==0) { ## 2015-01-24
-            if (sighting(traps(CH)))
-                c(n = 0, ndet = 0, nmov = 0, dpa = 0,
-                  unmarked=0, nonID = 0, nzero = 0)
-            else
-                c(n=0, ndet=0, nmov=0, dpa = NA, rse = NA, rpsv = NA)
+counts <- function(CH) {
+    ## for single-session CH
+    if (nrow(CH)==0) { ## 2015-01-24
+        if (sighting(traps(CH)))
+            c(n = 0, ndet = 0, nmov = 0, dpa = 0,
+              unmarked=0, nonID = 0, nzero = 0)
+        else
+            c(n=0, ndet=0, nmov=0, dpa = NA, rse = NA, rpsv = NA)
+    }
+    else {
+        n <- nrow(CH)
+        ndet <- sum(abs(CH)>0)
+        r2 <- sum(abs(CH)) - n   ## 2020-01-28
+        nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
+        ## detectors per animal
+        dpa <- if (length(dim(CH)) == 2)
+            mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+        else
+            mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+        if (sighting(traps(CH))) {
+            unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
+            nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
+            nzero <- sum(apply(abs(CH),1,sum) == 0)
+            c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
+              unmarked=unmarked, nonID = nonID, nzero = nzero)
         }
         else {
-            n <- nrow(CH)
-            ndet <- sum(abs(CH)>0)
-            r2 <- sum(abs(CH)) - n   ## 2020-01-28
-            nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
-            ## detectors per animal
-            dpa <- if (length(dim(CH)) == 2)
-                mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
-            else
-                mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
-            if (sighting(traps(CH))) {
-                unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
-                nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
-                nzero <- sum(apply(abs(CH),1,sum) == 0)
-                c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
-                  unmarked=unmarked, nonID = nonID, nzero = nzero)
-            }
-            else {
-                c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)), rpsv = RPSV(CH, CC = TRUE))
-            }
+            c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)), rpsv = RPSV(CH, CC = TRUE))
         }
     }
+}
+
+defaultextractfn <- function(x, ...) {
+
     if (inherits(x, 'try-error')) {
         ## null output: dataframe of 0 rows and 0 columns
         data.frame()
@@ -150,6 +187,17 @@ defaultextractfn <- function(x, ...) {
             out <- out[[1]]
         }
         attr(out, 'counts') <- counts(x$capthist)
+        attr(out, 'start')  <- x$start
+        attr(out, 'method') <- x$method
+        
+        # ipsecr.fit completion 'code' 1 successful, 2 target not within final box, 3 exceeded maximum simulations
+        # nlm() completion 'code' 
+        # optim() completion code 'convergence'
+        if (!is.null(x$fit) && !is.null(x$fit$code))
+            attr(out, 'code')   <- x$fit$code
+        if (!is.null(x$fit) && !is.null(x$fit$convergence))
+            attr(out, 'convergence') <- x$fit$convergence
+
         out
     }
     else {
@@ -211,22 +259,34 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             ## form dp for sim.capthist or sim.resight
             ## form par for starting values in secr.fit()
             ## 'par' does not allow for varying link or any non-null model (b, T etc.)
-            pnames <-  parnames(scenario$detectfn[i])
+            pnames <-  secr:::secr_parnames(scenario$detectfn[i])
             dp <- c(as.list(scenario[i,pnames]), recapfactor = scenario$recapfactor[i])
             if ('detectpar' %in% names(detarg) && !is.symbol(detarg$detectpar)) {
                 dp <- replace (dp, names(detarg$detectpar), detarg$detectpar)
             }
-            
+            # 2025-07-06 add any other arguments in provided detectpar
+            if (!all(names(detarg$detectpar) %in% names(dp))) {
+                dp <- c(dp, detarg$detectpar[!(names(detarg$detectpar) %in% names(dp))])
+            }
             #####################
             ## override det args as required
             detarg$traps      <- grid
-            detarg$popn       <- pop
             detarg$detectfn   <- scenario$detectfn[i]
             detarg$noccasions <- scenario$noccasions[i]
             if ("detectpar" %in% names(detarg))
                 detarg$detectpar  <- dp
             else
                 detarg$detparmat  <- dp
+            
+            
+            ## 2025-08-26 realised density cf Efford and Fletcher 2025 PCJ
+            if (poparg$model2D == 'rLGCP') {
+                Dmask<- attr(pop,'Lambda')
+                attr(pop, 'realD') <- realisedDensity(
+                    Dmask, grid, detarg$detectfn, detarg$detectpar, 
+                    detarg$noccasions)    
+            }
+            detarg$popn       <- pop
             
             ####################
             ## function-specific kludges
@@ -264,7 +324,7 @@ makeCH <- function (scenario, trapset, full.pop.args, full.det.args,
             ## remember this realisation of D from function
             attr(CHi, 'D') <- attr(detarg$popn, 'D')
             ##
-            
+
             ## 2023-02-06
             ## remember detection parameters
             attr(CHi, 'detectpar') <- detarg$detectpar
@@ -321,7 +381,8 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
             byscenario = byscenario)   # do not pass ...
         if (fitfunction == 'secr.fit') {
             fits <- secrlist(fits)
-            names(fits) <- sapply(fitarg, '[[', 'model')
+            modelnames <- sapply(lapply(fitarg, '[[', 'model'), secr:::secr_model.string, NULL)
+            if (length(unique(modelnames))>1) names(fits) <- modelnames
         }
         else {
             warning('multifit for non-secr fit returns list of fits rather than secrlist')
@@ -365,7 +426,7 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
             if (!is.list(model)) model <- list(model)
             vars <- unlist(lapply(lapply(model, terms), attr, 'term.labels'))
             if (fitfunction == "secr.fit") {
-                if (fitarg$CL) par$D <- NULL
+                if (fitarg$CL) par$D <- NULL 
                 if ((length(vars) != 0) && (fitarg$method == 'none')) {
                     ## not yet ready for interspersed beta coef
                     stop("method = 'none' requires full start vector for complex models")
@@ -379,22 +440,37 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         ## no simulations in first iteration; defer hessian
         if (fitfunction == "secr.fit") {
             chatnsim <- fitarg$details$nsim
-            if (abs(chatnsim)>0) {
+            if (!is.null(chatnsim) && abs(chatnsim)>0) {
                 fitarg$details <- as.list(replace(fitarg$details, 'nsim', 0))
                 fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
             }
         }
         ##-------------------------------------------------------------------
         if (fitfunction == "secr.fit") {
+            #----------------------------------------------
+            # 2025-08-16 optionally transfer Lambda surface
+            # for density model; also maybe other sources? check D model?
+            sourcemask <- attr(attr(fitarg$capthist,'popn'),'mask')
+            if (is.null(sourcemask))
+                sourcemask <- attr(attr(fitarg$capthist,'popn'),'Lambda')
+            if (!is.null(sourcemask)) {
+                fitarg$mask <- addCovariates(fitarg$mask, sourcemask, replace = TRUE)
+            }
+            #----------------------------------------------
+            
             fit <- try(do.call(secr.fit, fitarg))
         }
-        else {
+        else if (fitfunction == "ipsecr.fit") {
             fit <- try(do.call(ipsecr::ipsecr.fit, fitarg))
+        }
+        else if (fitfunction == "openCR.fit") {
+            if (!ms(CH)) warning("openCR.fit applied to single-session data")
+            fit <- try(do.call(openCR::openCR.fit, fitarg))
         }
         ##-------------------------------------------------------------------
         ## code for overdispersion adjustment of mark-resight data
         if (!ms(CH) && sighting(traps(CH)) && !inherits(fit, 'try-error')) {
-            if ((abs(chatnsim) > 0) &  (logLik(fit)>-1e9)) {
+            if (!is.null(chatnsim) && (abs(chatnsim) > 0) &&  (logLik(fit)>-1e9)) {
                 fitarg$details$nsim <- abs(chatnsim)
                 fitarg$details$hessian <- TRUE
                 fit$call <- NULL
@@ -477,7 +553,7 @@ run.scenarios <- function (
     CH.function = c("sim.capthist", "simOU.capthist", "simCH"),
     det.args, 
     fit = FALSE, 
-    fit.function = c("secr.fit", "ipsecr.fit"),
+    fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"),
     fit.args, 
     chatnsim = 0, 
     extractfn = NULL, 
@@ -492,7 +568,7 @@ run.scenarios <- function (
 
     #--------------------------------------------------------------------------
     onesim <- function (r, scenario) {
-        ## only one mask an fitarg allowed per scenario
+        ## only one mask and fitarg allowed per scenario
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
         if (is.function(trapset[[1]])) {
             # create each detector layout for this simulation
@@ -518,6 +594,7 @@ run.scenarios <- function (
         }
         CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
                      msk, multisession, joinsessions, CH.function)
+        
         processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
     }
     #--------------------------------------------------------------------------
@@ -576,7 +653,6 @@ run.scenarios <- function (
     ## record start time etc.
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
-    
     # not forcing match.arg for CH.function allows user function
     CH.function <- CH.function[1]
     fit.function <- match.arg(fit.function)
@@ -688,42 +764,28 @@ run.scenarios <- function (
     ##---------------------------------------------
     ## FIT ARGS
     ## allow user changes to default fit.function arguments
-    if (fit.function == 'secr.fit') {
-        default.args <- as.list(formals(secr.fit))
-        default.args[["..."]] <- NULL   # not relevant
-        default.args$verify    <- FALSE   ## never check
-        default.args$start     <- "true"  ## known values
-        default.args$detectfn  <- 0       ## halfnormal
-        default.args$biasLimit <- NA      ## never check
-        default.args$details   <- list(nsim = 0)
-        default.args$trace     <- FALSE
-    }
-    else if (fit.function == 'ipsecr.fit') {
-        if (!requireNamespace("ipsecr")) stop ("requires package ipsecr; please install")
-        default.args <- as.list(formals(ipsecr::ipsecr.fit))
-        default.args[["..."]] <- NULL   # not relevant
-        default.args$verify   <- FALSE    ## never check
-        default.args$start    <- "true"   ## known values
-        default.args$detectfn <- 0        ## halfnormal
-        default.args$proxyfn  <- ipsecr::proxy.ms
-        default.args$verbose  <- FALSE
-    }
-    else stop ("unrecognised fit function")
+    default.fit.args <- get.default.fit.args(fit.function)
     if (missing(fit.args)) fit.args <- NULL
-    fit.args <- wrapifneeded(fit.args, default.args)
-    
-    full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex, fit == "multifit")
+    fit.args <- wrapifneeded(fit.args, default.fit.args)
+    full.fit.args <- fullargs (fit.args, default.fit.args, scenarios$fitindex, fit == "multifit")
     if (fit.function == "secr.fit") {
-        for (i in 1:length(full.fit.args)) {
-            if ('details' %in% names(full.fit.args[[i]]))
-                full.fit.args[[i]]$details$nsim <- replace(full.fit.args$details,'nsim',chatnsim)
-            ## stop("chatnsim not currently available for multifit models")
+        if ( fit == "multifit") {
+            # multifit not ready for MR
+        }
+        else {
+            for (i in 1:length(full.fit.args)) {
+                if ('details' %in% names(full.fit.args[[i]]))
+                    full.fit.args[[i]]$details$nsim <- chatnsim
+                else
+                    full.fit.args[[i]]$details <- list(nsim = 0)   ## 2025-06-19
+            }
         }
     }
     
     ##--------------------------------------------
     ## MASKS
     ## construct masks as required
+    ## uts = unique trapindex, sigma combination
     if (missing(maskset)) {
         trapsigma <- scenarios[, c('trapsindex', 'sigma'), drop = FALSE]
         uts <- unique (trapsigma)
@@ -831,7 +893,7 @@ run.scenarios <- function (
 fit.models <- function (
     rawdata, 
     fit = FALSE, 
-    fit.function = c("secr.fit", "ipsecr.fit"),
+    fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"),
     fit.args, 
     chatnsim = 0, 
     extractfn = NULL,
@@ -858,8 +920,9 @@ fit.models <- function (
         flush.console()
         out
     }
-    ##--------------------------------------------------------------------------
+    ############################################################################
     ## mainline
+    
     fit.function <- match.arg(fit.function)
     if (!inherits(rawdata, "rawdata"))
         stop ("requires rawdata output from run.scenarios()")
@@ -867,7 +930,6 @@ fit.models <- function (
     if (missing(scen)) {
         scen <- unique(rawdata$scenarios$scenario)
     }
-
     else {
         scen <- unique(scen)
         if (!all(scen %in% unique(rawdata$scenarios$scenario)))
@@ -894,13 +956,11 @@ fit.models <- function (
     trapset <- rawdata$trapset
     maskset <- rawdata$maskset
     
+    ##--------------------------------------------
     ## record start time etc.
     ptm  <- proc.time()
     cl   <- match.call(expand.dots = TRUE)
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    # if (is.null(ncores)) {
-    #     ncores <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
-    # }
     ncores <- secr::setNumThreads(ncores)   ## 2022-12-29
     if (byscenario & (ncores > nrow(scenarios))) {
         stop ("ncores exceeds number of scenarios")
@@ -913,32 +973,15 @@ fit.models <- function (
     }
 
     ##---------------------------------------------
-    ## allow user changes to default arguments
-    if (fit.function == 'secr.fit') {
-        default.args <- as.list(args(secr.fit))[1:21]
-        default.args$biasLimit <- NA       ## never check
-        default.args$verify    <- FALSE    ## never check
-        default.args$start     <- "true"   ## known values
-        default.args$detectfn  <- 0        ## halfnormal
-        default.args$details   <- list(nsim = 0)
-        default.args$trace     <- FALSE
-    }
-    else if (fit.function == 'ipsecr.fit') {
-        if (!requireNamespace("ipsecr")) stop ("requires package ipsecr; please install")
-        default.args <- as.list(formals(ipsecr::ipsecr.fit))[1:16]
-        default.args$proxyfn <- ipsecr::proxy.ms
-        default.args$verify  <- FALSE   ## never check
-        default.args$start   <- "true"  ## known values
-        default.args$verbose <- FALSE
-    }
-    else stop ("unrecognised fit function")
+    ## FIT ARGS
+    ## allow user changes to default fit arguments
 
+    default.fit.args <- get.default.fit.args(fit.function)
     if (missing(fit.args)) fit.args <- NULL
-    fit.args <- wrapifneeded(fit.args, default.args)
+    fit.args <- wrapifneeded(fit.args, default.fit.args)
     nfit <- length(fit.args)
     if (nfit > 1) {
         ## expand scenarios by the required number of different model fits
-        ##      scenarios <- scenarios[rep(scenarios$scenario, each = nfit),]
         scenarios <- scenarios[rep(1:nrow(scenarios), each = nfit),]
         scenarios$fitindex <- rep(1:nfit, length.out = nrow(scenarios))
         ## assign new unique scenario number by adding decimal fraction
@@ -946,13 +989,14 @@ fit.models <- function (
             10 ^ trunc(log10(nfit)+1)
         scenarios <- scenarios[order(scenarios$scenario),]
         rownames(scenarios) <- 1:nrow(scenarios)
-
     }
-    full.fit.args <- fullargs (fit.args, default.args, scenarios$fitindex, fit == "multifit")
+    full.fit.args <- fullargs (fit.args, default.fit.args, scenarios$fitindex, fit == "multifit")
 
-    for (i in 1: length(full.fit.args))
+    for (i in 1:length(full.fit.args))
         full.fit.args[[i]]$details <- as.list(replace(full.fit.args[[i]]$details,'nsim',chatnsim))
 
+    ##--------------------------------------------
+    ## MASKS
     ## construct masks as required
     if (is.null(maskset)) {
         trapsigma <- scenarios[, c('trapsindex', 'sigma'), drop = FALSE]
@@ -1012,23 +1056,23 @@ fit.models <- function (
         output <- lapply(output, do.call, what = rbind)
     message("Completed in ", round((proc.time() - ptm)[3]/60,3), " minutes")
     desc <- packageDescription("secrdesign")  ## for version number
-    value <- list (call = cl,
-                   version = paste('secrdesign', desc$Version),
-                   starttime = starttime,
-                   proctime = (proc.time() - ptm)[3],
-                   scenarios = scenarios,
-                   trapset = trapset,
-                   maskset = maskset,
-                   xsigma = rawdata$xsigma,
-                   nx = rawdata$nx,
-                   pop.args = rawdata$pop.args,
-                   det.args = rawdata$det.args,
-                   fit = fit,
-                   fit.args = fit.args,
-                   extractfn = extractfn,
-                   seed = rawdata$seed,
-                   nrepl = nrepl,     ## rawdata$nrepl, 2015-01-26
-                   output = output,
+    value <- list (call       = cl,
+                   version    = paste('secrdesign', desc$Version),
+                   starttime  = starttime,
+                   proctime   = (proc.time() - ptm)[3],
+                   scenarios  = scenarios,
+                   trapset    = trapset,
+                   maskset    = maskset,
+                   xsigma     = rawdata$xsigma,
+                   nx         = rawdata$nx,
+                   pop.args   = rawdata$pop.args,
+                   det.args   = rawdata$det.args,
+                   fit        = fit,
+                   fit.args   = fit.args,
+                   extractfn  = extractfn,
+                   seed       = rawdata$seed,
+                   nrepl      = nrepl,     ## rawdata$nrepl, 2015-01-26
+                   output     = output,
                    outputtype = outputtype
                    )
     class(value) <- getoutputclass (outputtype)

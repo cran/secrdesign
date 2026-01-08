@@ -33,7 +33,7 @@ costing(traps, nr, noccasions, unitcost = list(), nrepeats = 1, routelength = NU
 
 The number of occasions (noccasions) is incremented by 1 if \code{setupoccasion} is TRUE.
 
-\tabular{llll}{
+\tabular{lll}{
 Component \tab Unit cost \tab Costing \cr
 Arrays \tab perarray \tab perarray x nrepeats \cr
 Detectors \tab perdetector \tab perdetector x nrow(traps) x nrepeats \cr
@@ -48,7 +48,7 @@ Detections \tab perdetection \tab perdetection x total detections (E(\eqn{n}) + 
 
 `Detections' includes costs such as handling time and laboratory DNA analysis.
 
-See  \url{../doc/secrdesign-tools.pdf} for more.
+See \href{https://www.otago.ac.nz/density/pdfs/secrdesign-tools.pdf}{secrdesign-tools.pdf} for more.
 
 }
 

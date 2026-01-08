@@ -193,7 +193,7 @@ dummyuserdist <- function (arg) {
 collapsemodel <- function (arg) {
     if ('model' %in% names(arg)) {
         if (!is.list(arg[['model']])) arg[['model']] <- list(arg[['model']])
-        arg[['model']] <-  secr:::model.string(arg[['model']], NULL)
+        arg[['model']] <-  secr:::secr_model.string(arg[['model']], NULL)
     }
     arg
 }

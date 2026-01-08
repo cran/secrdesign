@@ -25,8 +25,8 @@ make.scenarios <- function (trapsindex = 1, noccasions = 3, nrepeats = 1,
     trapping   <- inputs[c('trapsindex', 'noccasions', 'nrepeats')]
     
     ## allow uniform detectfn = 4 and detectfn = 20 for simulation
-    inputs$detectfn <- valid.detectfn(inputs$detectfn, valid = c(0:20))
-    pnames <- parnames(inputs$detectfn)
+    inputs$detectfn <- secr:::secr_valid.detectfn(inputs$detectfn, valid = c(0:20))
+    pnames <- secr:::secr_parnames(inputs$detectfn)
     OK <- sapply(inputs[pnames], is.numeric)
     if (any (!OK)) stop ("parameters missing from input: ", pnames[!OK])
     
