@@ -66,6 +66,8 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
     else {
         stat1 <- statistics[statistics %in% stat0]
         stat2 <- statistics[statistics %in% c('true','RB','RSE','COV','ERR')]
+        # experimental
+        # stat2 <- statistics[statistics %in% c('true','RB','RSE','COV','ERR','TIME')]
     }
     if (any(stat2 %in% c('true','RB','RSE','COV','ERR')) & (estname == '')) {
         stat2 <- character(0)
@@ -119,6 +121,14 @@ select.stats <- function (object, parameter = 'D', statistics, true) {
                 }
                 else tmp <- cbind (tmp, rep(NA, nrow(tmp)))
             }
+            # experimental 2026-09-01
+            # if (st == 'TIME') {
+            #     if (estimated) {
+            #         tmp <- cbind(tmp, unname(sapply(out, attr, 'proctime')))
+            #     }
+            #     else tmp <- cbind (tmp, rep(NA, nrow(tmp)))
+            # }
+            
         }
         colnames(tmp) <- c(stat1, stat2)
         tmp

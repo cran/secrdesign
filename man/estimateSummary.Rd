@@ -38,7 +38,8 @@ countSummary(object, verbose = FALSE, dec = 3)
   \item{parameter}{character name of parameter (row in estimate table)}
   \item{statistics}{character choice of outputs}
   \item{true}{numeric vector of true values, one per scenario and group}
-  \item{validrange}{numeric allowed for estimates or other checkfields}
+  \item{validrange}{numeric vector comprising the minimum and maximum
+  permitted values of checkfields, or a matrix (see \code{\link{validate}})}
   \item{checkfields}{character choice of columns in each estimate table that 
   will be checked against validrange}
   \item{format}{character choice of output}
@@ -112,7 +113,7 @@ If format = "data.frame" - a data frame with rows corresponding to group x scena
 
 \code{countSummary} --
 
-A matrix (verbose = FALSE) or list of matrices, one per scenario (verbse = TRUE).
+A matrix (verbose = FALSE) or list of matrices, one per scenario (verbose = TRUE).
 
 Columns are defined as 
 
@@ -122,6 +123,7 @@ Columns are defined as
 \item{dpa}{detectors per animal}
 \item{rse}{approximate RSE(\eqn{\hat D}) from 1 / sqrt(min(n,r))}
 \item{rpsv}{spatial variance computed with \code{\link[secr]{RPSV}}, CC = TRUE}
+\item{tsat}{trap saturation (mean proportion of used detectors occupied per occasion)}
 
 }
 

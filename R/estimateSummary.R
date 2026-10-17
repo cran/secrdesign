@@ -79,7 +79,7 @@ estimateSummary <- function (object, parameter = 'D',
     }
     if (length(true) != prod(dim(arr)[3:4])) stop ("incompatible 'true' vector")
     # check for out-of-range estimates
-    validate <- function(x) {
+    validate <- function(x, validrange) {
         x1 <- as.numeric(x[checkfields])
         # is.na checked 2024-03-14
         if (any(is.na(x1)) || !all(x1 >= validrange[1] & x1 <= validrange[2])) {
@@ -89,9 +89,19 @@ estimateSummary <- function (object, parameter = 'D',
     }
     if (!all(checkfields %in% dimnames(arr)[[2]]))
         warning("checkfields not found in object$output; check not performed")
-    else
-        arr <- aperm(apply(arr, c(1,3,4,5), validate), c(2,1,3,4,5))
-
+    else {
+        if (!is.matrix(validrange)) {
+            validrange <- matrix(validrange, nrow = nrow(object$scenarios), ncol=2, byrow = TRUE)
+        }
+        validarr <- arr
+        # for each scenario
+        for (i in 1:dim(arr)[4]) {
+            scenarioarr <- arr[,,,i,, drop = FALSE]
+            temp <- apply(scenarioarr, c(1,3,4,5), validate, validrange[i,])
+            validarr[,,,i,] <- aperm(temp, c(2,1,3,4,5))
+        }
+        arr <- validarr
+    }
     # working subsets of data
     estcol <- c('estimate','SE.estimate')
     # switch for coef()

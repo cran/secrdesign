@@ -1,3 +1,33 @@
+Changes in version 2.10.3 (2026-10-17)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() and fit.models(): details = list(chatmethod = "analytic") in fit.args requests the
+       analytic overdispersion of secr >= 5.5.1 (required for telemetry type 'marking');
+       chatnsim < 0 then re-estimates the variance only (method = "none")
+    o  default counts include trap saturation (tsat) (e.g., attribute of fitted model)
+
+Bugs fixed
+    o  run.scenarios() failed on Windows with byscenario = TRUE and ncores > 1 (i.e. PSOCK parallel clusters) 
+       when the extractfn required other arguments or used functions from the global environment. 
+       This has been fixed by copying the global environment to each worker; the cost in time or memory 
+       may be excessive if the global environment contains large objects. The issue does not arise on Unix.
+
+Other
+    o  depends secr >= 5.5.1
+
+Changes in version 2.10.2 (2026-09-04)
+
+New features or changed behaviour of old functions
+    o  run.scenarios() and fit.models() acquire argument 'verbose' (reports completion of each replicate)
+    o  estimateSummary() accepts matrix of scenario-specific values for validrange (cf validate)
+    o  default extractfn() saves proctime and chat of fit as attributes
+    o  run.scenarios() reported proctime for chat adjusted-variance models includes both steps
+
+Bugs fixed
+    o  scenarioSummary() converted all output to character when 'group' was character
+    o  fit.models() did not allow selected scenarios
+    o  attr 'counts' from run.scenarios() included telemetry, hence nzero always 0 for telemetry
+    
 Changes in version 2.10.1 (2026-01-09)
 
 New features or changed behaviour of old functions

@@ -40,6 +40,7 @@
 ## 2025-08-14 allow fit.function = "openCR.fit" (tentative)
 ## 2025-08-22 get.default.fit.args() common code
 ## 2025-12-27 etc. completion codes, start, method saved by defaultextractfn
+## 2026-08-28 verbose argument
 ###############################################################################
 wrapifneeded <- function (args, default) {
     if (any(names(args) %in% names(default)))
@@ -125,8 +126,30 @@ designextractfn <- function(CH, ...) {
 }
 ###############################################################################
 
+trapsat <- function (CH) {
+    # trap saturation by occasion
+    if (ms(CH)) {
+        lapply(CH, trapsat)   
+    }
+    else {
+        S <- secrdesign_noccasions(CH, notelem = TRUE)
+        K <- secrdesign_ndetector(traps(CH), notelem = TRUE)
+        CH[] <- abs(CH[])>0
+        tsat <- apply(apply(CH[,1:S,1:K, drop = FALSE],2:3,sum)>0,1,sum)
+        if (!is.null(usage(traps(CH)))) {
+            usge <- usage(traps(CH))
+            tuse <- apply(usge[1:K, 1:S, drop = FALSE],2,sum)
+        }
+        else {
+            tuse <- K   # constant over occasions
+        }
+        tsat/tuse
+    }
+}
+
 counts <- function(CH) {
     ## for single-session CH
+    ## modified 2026-09-04 to exclude telemetry
     if (nrow(CH)==0) { ## 2015-01-24
         if (sighting(traps(CH)))
             c(n = 0, ndet = 0, nmov = 0, dpa = 0,
@@ -136,23 +159,34 @@ counts <- function(CH) {
     }
     else {
         n <- nrow(CH)
-        ndet <- sum(abs(CH)>0)
-        r2 <- sum(abs(CH)) - n   ## 2020-01-28
+        S <- secrdesign_noccasions(CH, notelem = TRUE)
+        K <- secrdesign_ndetector(traps(CH), notelem = TRUE)
+        absCH <- abs(CH)[, 1:S, 1:K, drop = FALSE]
+        ndet <- sum(absCH>0)
+        tsat <- mean(trapsat(CH))
+        r2 <- sum(absCH) - n   ## 2020-01-28
         nmoves <- sum(unlist(sapply(moves(CH), function(y) y>0)))
         ## detectors per animal
         dpa <- if (length(dim(CH)) == 2)
-            mean(apply(abs(CH), 1, function(y) length(unique(y[y>0]))))
+            mean(apply(absCH, 1, function(y) length(unique(y[y>0]))))
         else
-            mean(apply(apply(abs(CH), c(1,3), sum)>0, 1, sum))
+            mean(apply(apply(absCH, c(1,3), sum)>0, 1, sum))
         if (sighting(traps(CH))) {
             unmarked <- if (is.null(Tu <- Tu(CH))) NA else sum(Tu)
             nonID <- if (is.null(Tm <- Tm(CH))) NA else sum(Tm)
-            nzero <- sum(apply(abs(CH),1,sum) == 0)
+            nzero <- sum(apply(absCH,1,sum) == 0)
             c(n = n, ndet = ndet, nmov = nmoves, dpa = dpa,
-              unmarked=unmarked, nonID = nonID, nzero = nzero)
+              unmarked = unmarked, nonID = nonID, nzero = nzero, 
+              tsat = tsat)
         }
         else {
-            c(n=n, r=r2, nmov=nmoves, dpa = dpa, rse = 1 / sqrt(min(n,r2)), rpsv = RPSV(CH, CC = TRUE))
+            c(n = n, 
+              r = r2, 
+              nmov = nmoves, 
+              dpa = dpa, 
+              rse = 1 / sqrt(min(n,r2)), 
+              rpsv = RPSV(CH, CC = TRUE), 
+              tsat = tsat)
         }
     }
 }
@@ -186,9 +220,11 @@ defaultextractfn <- function(x, ...) {
             warning ("summarising only first session, group or mixture class")
             out <- out[[1]]
         }
-        attr(out, 'counts') <- counts(x$capthist)
-        attr(out, 'start')  <- x$start
-        attr(out, 'method') <- x$method
+        attr(out, 'counts')   <- counts(x$capthist)
+        attr(out, 'start')    <- x$start
+        attr(out, 'method')   <- x$method
+        attr(out, 'proctime') <- x$proctime
+        attr(out, 'chat')     <- x$details$chat
         
         # ipsecr.fit completion 'code' 1 successful, 2 target not within final box, 3 exceeded maximum simulations
         # nlm() completion 'code' 
@@ -438,11 +474,17 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         ##-------------------------------------------------------------------
         ## 2015-11-03 code for overdispersion adjustment of mark-resight data
         ## no simulations in first iteration; defer hessian
+        ## 2026-10-06 details$chatmethod = "analytic" requests the analytic overdispersion
+        ## (secr >= 5.5.1) in place of simulation; it is applied in the second step
+        chatnsim <- NULL
+        chatanalytic <- FALSE
         if (fitfunction == "secr.fit") {
             chatnsim <- fitarg$details$nsim
-            if (!is.null(chatnsim) && abs(chatnsim)>0) {
+            chatanalytic <- identical(fitarg$details$chatmethod, "analytic")
+            if (chatanalytic || (!is.null(chatnsim) && abs(chatnsim)>0)) {
                 fitarg$details <- as.list(replace(fitarg$details, 'nsim', 0))
                 fitarg$details <- as.list(replace(fitarg$details, 'hessian', FALSE))
+                fitarg$details$chatmethod <- "simulate"    # no adjustment in first step
             }
         }
         ##-------------------------------------------------------------------
@@ -470,14 +512,28 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
         ##-------------------------------------------------------------------
         ## code for overdispersion adjustment of mark-resight data
         if (!ms(CH) && sighting(traps(CH)) && !inherits(fit, 'try-error')) {
-            if (!is.null(chatnsim) && (abs(chatnsim) > 0) &&  (logLik(fit)>-1e9)) {
-                fitarg$details$nsim <- abs(chatnsim)
+            if ((chatanalytic || (!is.null(chatnsim) && (abs(chatnsim) > 0))) && (logLik(fit)>-1e9)) {
+                if (chatanalytic) {
+                    ## analytic c-hat at the first-step estimates; no simulation,
+                    ## so the magnitude of chatnsim is irrelevant
+                    fitarg$details$chatmethod <- "analytic"
+                    fitarg$details$nsim <- 1
+                }
+                else {
+                    fitarg$details$nsim <- abs(chatnsim)
+                }
                 fitarg$details$hessian <- TRUE
                 fit$call <- NULL
                 fitarg$start <- fit
-                if (chatnsim<0)
+                if (!is.null(chatnsim) && chatnsim<0) {
                     fitarg$method <- "none"
+                }
+                # sum times 2026-08-31
+                temptime <- fit$proctime
                 fit <- try(do.call(fitfunction, fitarg))
+                if (!inherits(fit, 'try-error')) {
+                    fit$proctime <- fit$proctime + temptime
+                }
             }
         }
         ##-------------------------------------------------------------------
@@ -487,37 +543,41 @@ processCH <- function (scenario, CH, fitarg, extractfn, fit, fitfunction, byscen
 #####################
 
 getoutputtype <- function (output) {
+    typicalrepl <- NULL
     for (i in 1:length(output)) {
-        typical <- output[[i]][[1]]  ## ith scenario, first replicate
-        if (length(typical) > 0) break
+        typical <- output[[i]]
+        if (length(typical)>0) {
+            typicalrepl <- typical[[1]]  ## ith scenario, first replicate
+            if (length(typicalrepl) > 0) break
+        }
     }
-    if (length(typical) == 0) stop ("no results found")
+    if (length(typicalrepl) == 0) stop ("no results found")
 
     ## outputtype: secrfit, predicted, coef, numeric
     outputtype <-
-        if (inherits(typical, 'secr'))
+        if (inherits(typicalrepl, 'secr'))
             'secrfit'
-    else if (inherits(typical, 'secrlist'))
+    else if (inherits(typicalrepl, 'secrlist'))
         'multifit'
-    else if (inherits(typical, 'ipsecr'))
+    else if (inherits(typicalrepl, 'ipsecr'))
         'ipsecrfit'
-    else if (inherits(typical, 'summary.secr'))
+    else if (inherits(typicalrepl, 'summary.secr'))
             'secrsummary'
-        else if (inherits(typical, 'data.frame')) {
-            if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)) &
-                    any(c('R.N','E.N') %in% rownames(typical)))
+        else if (inherits(typicalrepl, 'data.frame')) {
+            if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typicalrepl)) &
+                    any(c('R.N','E.N') %in% rownames(typicalrepl)))
                 'regionN'
-            else if ( all(c('estimate','SE.estimate','lcl','ucl', 'CVn') %in% names(typical)))
+            else if ( all(c('estimate','SE.estimate','lcl','ucl', 'CVn') %in% names(typicalrepl)))
                 'derived'
-            else if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typical)))
+            else if (all(c('estimate','SE.estimate','lcl','ucl') %in% names(typicalrepl)))
                 'predicted'
-            else if (all(c('beta','SE.beta','lcl','ucl') %in% names(typical)))
+            else if (all(c('beta','SE.beta','lcl','ucl') %in% names(typicalrepl)))
                 'coef'
             else 'user'
         }
-        else if (inherits(typical, 'capthist'))          ## rawdata
+        else if (inherits(typicalrepl, 'capthist'))          ## rawdata
             'capthist'
-        else if (is.vector(typical, mode = 'numeric'))   ## usually, summary of unfitted data
+        else if (is.vector(typicalrepl, mode = 'numeric'))   ## usually, summary of unfitted data
             'selectedstatistics'
         else
             'user'
@@ -564,6 +624,7 @@ run.scenarios <- function (
     seed = 123,  
     trap.args = NULL,
     prefix = NULL,
+    verbose = FALSE,
     ...) {
 
     #--------------------------------------------------------------------------
@@ -592,10 +653,17 @@ run.scenarios <- function (
         else {
             fitarg$mask <- msk
         }
+        if (is.numeric(verbose) && (r == verbose)) browser()
+        
         CH <- makeCH(scenario, trapset, full.pop.args, full.det.args,
                      msk, multisession, joinsessions, CH.function)
         
-        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
+        out <- processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
+        
+        if (verbose) message("Completed scenario ", scenario$scenario[1], " replicate ", r, 
+                             " ", format(Sys.time(), "%H:%M:%S %d %b %Y"))
+        out
+        
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
@@ -863,13 +931,14 @@ run.scenarios <- function (
         clust <- parallel::makeCluster(ncores, type = clustertype, methods = TRUE)
         if (clustertype == "PSOCK") {
             clusterEvalQ(clust, library(secr))
-            clusterExport(clust, c(
-                "runscenario", "onesim", "full.fit.args", "findarg",
-                "maskset", "trapset", "trap.args", "full.det.args", 
-                "multisession", "joinsessions", "CH.function", "makeCH", 
-                "processCH", "extractfn", "fit", "fit.function", 
-                "byscenario", ...
-            ), environment())
+            clusterExport(clust, ls(globalenv()), globalenv())  # 2026-10-06 Everything!
+            # clusterExport(clust, c(
+            #     "runscenario", "onesim", "full.fit.args", "findarg",
+            #     "maskset", "trapset", "trap.args", "full.det.args", 
+            #     "multisession", "joinsessions", "CH.function", "makeCH", 
+            #     "processCH", "extractfn", "fit", "fit.function", 
+            #     "byscenario", ...
+            # ), environment())
         }
         parallel::clusterSetRNGStream(clust, seed)
         on.exit(parallel::stopCluster(clust))
@@ -901,21 +970,28 @@ fit.models <- function (
     byscenario = FALSE, 
     scen, 
     repl, 
+    verbose = FALSE,
     ...) {
-    
     #--------------------------------------------------------------------------
-    onesim <- function (CH, scenario) {
+    onesim <- function (r, CH, scenario) {
         fitarg <- full.fit.args[[scenario$fitindex[1]]]
         if (is.null(fitarg$mask)) {  
             fitarg$mask <- maskset[[scenario$maskindex[1]]]
         }
-        processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
+        if (is.numeric(verbose) && (r == verbose)) browser()
+        out <- processCH(scenario, CH, fitarg, extractfn, fit, fit.function, byscenario, ...)
+        if (verbose) message("Completed scenario ", scenario$scenario[1], " replicate ", r, 
+                             " ", format(Sys.time(), "%H:%M:%S %d %b %Y"))
+        out
+        
     }
     #--------------------------------------------------------------------------
     runscenario <- function(x) {
         ## match by name, not number 2015-01-27
         scenID <- as.character(trunc(x$scenario[1]))
-        out <- lapply(CHlist[[scenID]], onesim, scenario = x)
+        # out <- lapply(CHlist[[scenID]], onesim, scenario = x)
+        nrepl <- length(CHlist[[scenID]])
+        out <- mapply(onesim, 1:nrepl, CHlist[[scenID]], MoreArgs = list(scenario = x), SIMPLIFY = FALSE)
         message("Completed scenario ", x$scenario[1])
         flush.console()
         out
@@ -950,7 +1026,8 @@ fit.models <- function (
         if (nrepl<1)
             stop ("invalid repl argument")
     }
-    CHlist <- lapply(rawdata$output[scen], '[', repl)
+    scenindex <- match(scen, unique(rawdata$scenarios$scenario))
+    CHlist <- lapply(rawdata$output[scenindex], '[', repl)
     scenarios <- rawdata$scenarios[rawdata$scenarios$scenario %in% scen,]
 
     trapset <- rawdata$trapset
@@ -1049,7 +1126,6 @@ fit.models <- function (
     
     ##-------------------------------------------
     ## tidy output
-    
     outputtype <- getoutputtype(output)
     if (outputtype == 'selectedstatistics')
         ## collapse replicates within a scenario into a matrix

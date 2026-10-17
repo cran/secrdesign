@@ -38,11 +38,11 @@ run.scenarios(nrepl, scenarios, trapset, maskset, xsigma = 4, nx = 32,
     fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"), 
     fit.args, chatnsim = 0, extractfn = NULL, multisession = FALSE,
     joinsessions = FALSE, ncores = NULL, byscenario = FALSE, seed = 123, 
-    trap.args, prefix = NULL, ...)
+    trap.args, prefix = NULL, verbose = FALSE, ...)
 
 fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit", "openCR.fit"), 
     fit.args, chatnsim, extractfn = NULL, ncores = NULL, byscenario = FALSE,
-    scen, repl, ...)
+    scen, repl, verbose = FALSE, ...)
 
 }
 
@@ -74,6 +74,7 @@ fit.models(rawdata, fit = FALSE, fit.function = c("secr.fit", "ipsecr.fit", "ope
   \item{seed}{integer pseudorandom number seed}
   \item{trap.args}{list of arguments for trapset components if using function option }
   \item{prefix}{character to name files saving output of each scenario }
+  \item{verbose}{logical; if TRUE a message is posted for each completed replicate}
   \item{\dots}{other arguments passed to extractfn}
   \item{rawdata}{`rawdata' object from previous call to \code{run.scenarios}}
   \item{scen}{integer vector of scenario subscripts}
@@ -118,8 +119,15 @@ process using \code{parLapply} from \pkg{parallel} (see also \link[secr]{Paralle
 
 If \code{byscenario = FALSE} then from \pkg{secrdesign} 2.6.0 onwards the usual multithreading of \pkg{secr} 4.5 is applied. The number of cores should usually be preset with `setNumThreads`. If \code{ncores} is provided then the environment variable RCPP_PARALLEL_NUM_THREADS is reset. The default behaviour of the fitting functions (secr.fit, ipsecr.fit, openCR.fit) is to use this value (unless specified in fit.args).
 
-  When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
+When `byscenario = TRUE` the L'Ecuyer pseudorandom generator is used with a separate random
   number stream for each core (see \code{\link{clusterSetRNGStream}}).
+  
+In earlier versions, \code{run.scenarios} failed on Windows with byscenario = TRUE and ncores > 1 (i.e. PSOCK parallel clusters)
+       when run.scenarios or its functions (CH.function, extractfn) used objects from the global environment, including arguments passed as variables. 
+       This has been fixed by copying the global environment to each worker; the cost in time or memory 
+       may be excessive if the global environment contains large objects. 
+The size of the 5 largest objects being copied may be checked with \code{sort(sapply(ls(globalenv()), function(x) object.size(get(x))), decreasing = TRUE)[1:5]}.
+       The issue does not arise on Unix.  
 
 For \code{ncores > 1} it pays to keep an eye on the processes from the
   Performance page of Windows Task Manager (<ctrl><alt><del>), or `top' in
@@ -170,6 +178,8 @@ In \code{fit.models} the arguments \code{scen} and \code{repl} may be used to se
 }
   
 \subsection{Mark-resight}{  \code{chatnsim} controls an additional quasi-likelihood model step to adjust for overdispersion of sighting counts. No adjustment happens when \code{chatnsim = 0}; otherwise \code{abs(chatnsim)} gives the number of simulations to perform to estimate overdispersion. If \code{chatnsim < 0} then the quasilikelihood is used only to re-estimate the variance at the previous MLE (method = "none").
+
+With \code{secr} >= 5.5.1 the overdispersion may instead be computed analytically, without simulation, by including \code{details = list(chatmethod = "analytic")} in \code{fit.args} (see \code{\link[secr]{details}}). This is the only option for telemetry type `marking', and is available for sighting-only models (all \code{markocc} 0). The adjustment then happens whatever the value of \code{chatnsim}, which is otherwise used only for its sign: if \code{chatnsim < 0} the variance is re-estimated at the previous MLE, and otherwise the model is refitted with the analytic adjustment. The analytic calculation uses no random numbers, so simulated datasets are the same as for a run with the same \code{seed} that makes no adjustment.
 }
 
 \subsection{Intermediate output}{ If 'prefix' is provided than results will be saved for each scenario separately. The filename of scenario 1 is of the form 'prefix1.RDS'. The prefix may include a file path.

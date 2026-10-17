@@ -210,7 +210,6 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
         rotRSE <- rotRSE * scenario$CF
 
         out <- c(scenario[1:8], round(nrm,3), round(en2[2],3))
-
         out <- c(out, 
                  esa = esa,
                  CF = scenario$CF, 
@@ -254,7 +253,8 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
                      sinuosity = (spans/routelength)[scenario$trapsindex])
         }
         
-        unlist(out)
+        # unlist(out)
+        as.data.frame(out)
     }
     ##---------------------------------------------------------------------------
     ## tweaked 2019-01-09 for single-trap arrays
@@ -285,6 +285,5 @@ scenarioSummary <- function (scenarios, trapset, maskset, xsigma = 4, nx = 64,
     }
     
     output <- do.call(rbind, output)
-    output <- as.data.frame(output)
     output
 }
